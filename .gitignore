@@ -1,0 +1,104 @@
+# ═══════════════════════════════════════════════════════════════════
+# Gmao-Services-IA — .gitignore racine (monorepo)
+# Couvre le workspace et tous les sous-projets (GMAO-RAG, GMAO-ML, …)
+# Pour un nouveau sous-projet : ajouter une section dédiée en bas.
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Python ──────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# ── Virtual environment ─────────────────────────────────────────
+.venv/
+venv/
+ENV/
+
+# ── Dépendances / build ────────────────────────────────────────
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# ── Environnement / secrets ────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.env.bak
+
+# ── IDE / éditeurs ─────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+*.sublime-project
+*.sublime-workspace
+
+# ── Système ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.lnk
+
+# ── Tests / couverture ─────────────────────────────────────────
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+
+# ── Type checking / linters ────────────────────────────────────
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+
+# ── Logs ───────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Fichiers temporaires / backups ─────────────────────────────
+tmp/
+temp/
+uploads/
+*.bak
+*.tmp
+
+# ═══════════════════════════════════════════════════════════════════
+# GMAO-API — passerelle capteurs → ML → Laravel
+# (le .env est déjà couvert par la section secrets ; rien d'autre à ignorer)
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Notebooks ──────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ═══════════════════════════════════════════════════════════════════
+# GMAO-RAG — données volumineuses, Docker et tests hors repo
+# ═══════════════════════════════════════════════════════════════════
+GMAO-RAG/qdrant_storage/
+GMAO-RAG/Dockerfile
+GMAO-RAG/docker-compose.yml
+GMAO-RAG/.dockerignore
+GMAO-RAG/docker/
+GMAO-RAG/tests/
+GMAO-RAG/app/data_sources/CORRECTIONS_APPLIQUEES.md
+GMAO-RAG/app/data_sources/database/AGENT_CONTEXT.md
+GMAO-RAG/tmp/data_sources_tmp/database/AGENT_CONTEXT.md
+
+# ═══════════════════════════════════════════════════════════════════
+# GMAO-ML — données, modèles, tracking MLflow et tests hors repo
+# ═══════════════════════════════════════════════════════════════════
+GMAO-ML/data/
+GMAO-ML/tests/
+GMAO-ML/mlruns/
+# GMAO-ML/artifacts/   # volontairement tracké : modèle courant versionné

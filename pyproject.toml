@@ -1,0 +1,21 @@
+[project]
+name = "gmao-services-ia"
+version = "0.1.0"
+description = "Workspace GMAO — services IA (RAG, ML prédictif, OCR, dashboard)"
+requires-python = ">=3.13"
+dependencies = [
+    "gmao-rag",
+    "gmao-ml",
+    "gmao-api",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["GMAO-RAG", "GMAO-ML", "GMAO-API"]
+
+[tool.uv.sources]
+gmao-rag = { workspace = true }
+gmao-ml = { workspace = true }
+gmao-api = { workspace = true }

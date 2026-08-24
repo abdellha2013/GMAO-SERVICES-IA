@@ -1,0 +1,31 @@
+[project]
+name = "gmao-ml"
+version = "0.1.0"
+description = "ML prédictif GMAO — classification de l'état des machines (pipeline d'entraînement, API REST de prédiction, tracking MLflow)"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "ipykernel>=6.29.0",
+    "joblib>=1.4.2",
+    "jupyterlab>=4.2.0",
+    "kagglehub>=0.3.0",
+    "matplotlib>=3.9.0",
+    "mlflow>=3.0.0",
+    "numpy>=2.1.0",
+    "pandas>=2.2.0",
+    "pydantic>=2.7.0",
+    "pytest>=8.0.0",
+    "python-dotenv>=1.0.1",
+    "scikit-learn>=1.5.0",
+    "seaborn>=0.13.0",
+    "uvicorn[standard]>=0.30.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.29,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "gmao_ml"
+module-root = ""

@@ -1,0 +1,72 @@
+{
+  "name": "gmao_state_classifier",
+  "version": "20260824_150222",
+  "strategy": "hist_gradient_boosting",
+  "target_column": "machine_failure",
+  "classes": [
+    "0",
+    "1"
+  ],
+  "features": {
+    "numeric": [
+      "Air temperature [K]",
+      "Rotational speed [rpm]",
+      "Tool wear [min]",
+      "temperature_delta_k",
+      "puissance_w"
+    ],
+    "categorical": [
+      "Type"
+    ]
+  },
+  "input_features": [
+    "Type",
+    "Air temperature [K]",
+    "Process temperature [K]",
+    "Rotational speed [rpm]",
+    "Torque [Nm]",
+    "Tool wear [min]"
+  ],
+  "augmentation": {
+    "strategy": "ai4i_rule_bootstrap",
+    "target_minority_share": 0.25,
+    "random_state": 42,
+    "rule_agreement_on_real": 0.994875,
+    "n_real_positive": 271,
+    "n_real_negative": 7729,
+    "n_synthetic_positive": 2305,
+    "jitter_sigma_frac": 0.2,
+    "max_neg_per_pos": null,
+    "n_dropped_negative": 0
+  },
+  "decision_threshold": 0.75,
+  "positive_class": 1,
+  "cost_model": {
+    "fn_cost": 10.0,
+    "fp_cost": 1.0,
+    "selected_on": "test_exploratoire"
+  },
+  "metrics": {
+    "accuracy": 0.9945,
+    "f1_macro": 0.9553,
+    "precision_macro": 0.9889,
+    "recall_macro": 0.9262,
+    "roc_auc": 0.9743
+  },
+  "trained_at": "2026-08-24T15:02:22",
+  "n_training_samples": 10305,
+  "sklearn_version": "1.9.0",
+  "source_notebook": "notebooks/02_training_evaluation_ai4i.ipynb",
+  "feature_engineering": {
+    "cap_columns": "",
+    "cap_quantiles": "0.005-0.995",
+    "drop_after_derive": "Process temperature [K],Torque [Nm]",
+    "derived": "temperature_delta_k,puissance_w"
+  },
+  "early_stopping": {
+    "enabled": true,
+    "validation_fraction": 0.15,
+    "n_iter_no_change": 20,
+    "iterations_run": 78
+  }
+}

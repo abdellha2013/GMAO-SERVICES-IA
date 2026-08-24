@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GMAO-RAG · Console d'administration</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f8ef7'/%3E%3Ctext x='16' y='22' font-size='16' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-logo">G</div>
+      <div class="brand-text">
+        <span class="brand-name">GMAO-RAG</span>
+        <span class="brand-sub">Console d'administration</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <p class="nav-label">Supervision</p>
+      <button class="nav-item active" data-section="dashboard">
+        <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        Tableau de bord
+      </button>
+      <button class="nav-item" data-section="documents">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+        Documents
+      </button>
+
+      <p class="nav-label">Ingestion</p>
+      <button class="nav-item" data-section="ingest-files">
+        <svg viewBox="0 0 24 24"><path d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-5H3v5a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-5h-2zM11 5.83 8.41 8.41 7 7l5-5 5 5-1.41 1.41L13 5.83V15h-2V5.83z"/></svg>
+        Fichiers
+      </button>
+      <button class="nav-item" data-section="ingest-db">
+        <svg viewBox="0 0 24 24"><path d="M12 2C7.58 2 4 3.79 4 6v12c0 2.21 3.58 4 8 4s8-1.79 8-4V6c0-2.21-3.58-4-8-4zm0 2c3.87 0 6 1.5 6 2s-2.13 2-6 2-6-1.5-6-2 2.13-2 6-2zm6 14c0 .5-2.13 2-6 2s-6-1.5-6-2v-3.09C7.61 15.57 9.72 16 12 16s4.39-.43 6-1.09V18zm0-5c0 .5-2.13 2-6 2s-6-1.5-6-2V9.91C7.61 10.57 9.72 11 12 11s4.39-.43 6-1.09V13z"/></svg>
+        Base de données
+      </button>
+
+      <p class="nav-label">Recherche</p>
+      <button class="nav-item" data-section="rag">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7 14 5 12 5 9.5S7 5 9.5 5 14 7 14 9.5 12 14 9.5 14z"/></svg>
+        RAG
+      </button>
+      <button class="nav-item" data-section="strategies">
+        <svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M12 22v-9l9-5M12 13 3 8" fill="none" stroke-width="1"/></svg>
+        Stratégies
+      </button>
+
+      <p class="nav-label">Configuration</p>
+      <button class="nav-item" data-section="settings">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.61 3.61 0 0 1 8.4 12c0-1.98 1.62-3.6 3.6-3.6s3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        Connexion
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="theme-toggle" id="themeToggle" title="Basculer le thème">
+        <span class="theme-icon-dark">🌙</span>
+        <span class="theme-icon-light">☀️</span>
+        <span id="themeLabel">Thème clair</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="main">
+
+    <header class="topbar">
+      <button class="burger" id="burgerBtn" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <h1 id="pageTitle">Tableau de bord</h1>
+      <div class="topbar-right">
+        <span class="version-badge" id="apiVersionBadge">v—</span>
+        <div class="health-pill" id="healthPill">
+          <span class="dot"></span><span id="healthPillText">Vérification…</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ═══════════ TABLEAU DE BORD ═══════════ -->
+      <section class="section active" id="section-dashboard">
+        <div class="section-head">
+          <div>
+            <h2>État du système</h2>
+            <p class="section-desc">Supervision en temps réel des services de la plateforme GMAO-RAG.</p>
+          </div>
+          <button class="btn btn-outline" id="dashRefresh">
+            <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            Actualiser
+          </button>
+        </div>
+
+        <div class="grid grid-4">
+          <div class="card status-card" id="cardApi">
+            <div class="status-icon">⚡</div>
+            <div class="status-body">
+              <span class="status-name">API FastAPI</span>
+              <span class="status-value" data-value>—</span>
+            </div>
+          </div>
+          <div class="card status-card" id="cardMysql">
+            <div class="status-icon">🗄️</div>
+            <div class="status-body">
+              <span class="status-name">MySQL</span>
+              <span class="status-value" data-value>—</span>
+            </div>
+          </div>
+          <div class="card status-card" id="cardQdrant">
+            <div class="status-icon">🧭</div>
+            <div class="status-body">
+              <span class="status-name">Qdrant</span>
+              <span class="status-value" data-value>—</span>
+            </div>
+          </div>
+          <div class="card status-card" id="cardLatency">
+            <div class="status-icon">⏱️</div>
+            <div class="status-body">
+              <span class="status-name">Latence API</span>
+              <span class="status-value" data-value>—</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="sub-title">Statistiques du pipeline</h3>
+        <div class="grid grid-3">
+          <div class="card stat-card">
+            <span class="stat-number" id="statDocs">—</span>
+            <span class="stat-label">Documents indexés</span>
+          </div>
+          <div class="card stat-card">
+            <span class="stat-number" id="statChunks">—</span>
+            <span class="stat-label">Chunks générés</span>
+          </div>
+          <div class="card stat-card">
+            <span class="stat-number" id="statPoints">—</span>
+            <span class="stat-label">Vecteurs Qdrant</span>
+          </div>
+        </div>
+
+        <details class="raw-json">
+          <summary>Réponse brute /health et /stats</summary>
+          <pre id="dashRaw"></pre>
+        </details>
+      </section>
+
+      <!-- ═══════════ DOCUMENTS ═══════════ -->
+      <section class="section" id="section-documents">
+        <div class="section-head">
+          <div>
+            <h2>Documents indexés</h2>
+            <p class="section-desc">Consultez, détaillez ou supprimez les documents de la base de connaissances.</p>
+          </div>
+          <button class="btn btn-outline" id="docsRefresh">
+            <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            Actualiser
+          </button>
+        </div>
+
+        <div class="card table-card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th><th>Nom</th><th>Type</th><th>Chunks</th><th>Indexé</th><th class="th-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="docsTbody"></tbody>
+          </table>
+          <div class="empty-state hidden" id="docsEmpty">
+            <span class="empty-icon">📄</span>
+            <p>Aucun document indexé pour le moment.</p>
+            <p class="empty-hint">Utilisez l'onglet « Fichiers » pour ingérer vos premiers documents.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ INGESTION FICHIERS ═══════════ -->
+      <section class="section" id="section-ingest-files">
+        <div class="section-head">
+          <div>
+            <h2>Ingestion de fichiers</h2>
+            <p class="section-desc">Chargez des documents dans le pipeline RAG (découpage, embedding, indexation).</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="dropzone" id="dropZone">
+            <input type="file" id="fileInput" multiple
+                   accept=".pdf,.docx,.txt,.md,.markdown,.csv,.json,.xlsx,.html,.htm">
+            <div class="dropzone-inner">
+              <span class="dropzone-icon">📥</span>
+              <p><strong>Glissez-déposez</strong> vos fichiers ici<br>ou</p>
+              <button type="button" class="btn btn-primary" id="btnPickFiles">Parcourir…</button>
+              <p class="dropzone-formats">Formats acceptés : PDF · DOCX · TXT · MD · CSV · JSON · XLSX · HTML</p>
+            </div>
+          </div>
+
+          <ul class="files-list" id="filesList"></ul>
+
+          <div class="form-actions">
+            <button class="btn btn-primary btn-lg" id="btnUpload" disabled>
+              Lancer l'ingestion
+            </button>
+            <button class="btn btn-ghost" id="btnClearFiles" disabled>Vider la liste</button>
+          </div>
+        </div>
+
+        <div id="ingestFilesResult"></div>
+      </section>
+
+      <!-- ═══════════ INGESTION BDD ═══════════ -->
+      <section class="section" id="section-ingest-db">
+        <div class="section-head">
+          <div>
+            <h2>Ingestion depuis MySQL</h2>
+            <p class="section-desc">Indexez le contenu d'une table ou le résultat d'une requête SQL.</p>
+          </div>
+        </div>
+
+        <form class="card form-grid" id="dbForm">
+          <div class="field">
+            <label for="dbHost">Hôte <span class="req">*</span></label>
+            <input type="text" id="dbHost" value="mysql" required>
+          </div>
+          <div class="field">
+            <label for="dbPort">Port</label>
+            <input type="number" id="dbPort" value="3306" min="1" max="65535">
+          </div>
+          <div class="field">
+            <label for="dbName">Base de données <span class="req">*</span></label>
+            <input type="text" id="dbName" value="gmao_rag" required>
+          </div>
+          <div class="field">
+            <label for="dbUser">Utilisateur <span class="req">*</span></label>
+            <input type="text" id="dbUser" value="root" required>
+          </div>
+          <div class="field">
+            <label for="dbPass">Mot de passe <span class="req">*</span></label>
+            <input type="password" id="dbPass" required>
+          </div>
+          <div class="field">
+            <label for="dbTable">Table <span class="req">*</span></label>
+            <input type="text" id="dbTable" placeholder="ex : equipements" required>
+          </div>
+          <div class="field field-full">
+            <label for="dbQuery">Requête SQL personnalisée <span class="opt">(optionnel — remplace la table)</span></label>
+            <textarea id="dbQuery" rows="3" placeholder="SELECT * FROM equipements WHERE actif = 1"></textarea>
+          </div>
+          <div class="field">
+            <label for="dbEquip">ID équipement <span class="opt">(optionnel)</span></label>
+            <input type="number" id="dbEquip" placeholder="ex : 42">
+          </div>
+          <div class="field-pair">
+            <div class="field">
+              <label for="dbChunkSize">Taille des chunks</label>
+              <input type="number" id="dbChunkSize" value="500" min="100" max="4000">
+            </div>
+            <div class="field">
+              <label for="dbChunkOverlap">Chevauchement</label>
+              <input type="number" id="dbChunkOverlap" value="50" min="0" max="1000">
+            </div>
+          </div>
+          <div class="form-actions field-full">
+            <button type="submit" class="btn btn-primary btn-lg" id="btnDbIngest">Indexer les données</button>
+          </div>
+        </form>
+
+        <div id="dbResult"></div>
+      </section>
+
+      <!-- ═══════════ RECHERCHE RAG ═══════════ -->
+      <section class="section" id="section-rag">
+        <div class="section-head">
+          <div>
+            <h2>Recherche intelligente</h2>
+            <p class="section-desc">Interrogez la base de connaissances avec récupération, reranking et génération.</p>
+          </div>
+        </div>
+
+        <div class="seg-tabs" role="tablist">
+          <button class="seg-tab active" data-ragtab="search">🔍 Recherche complète</button>
+          <button class="seg-tab" data-ragtab="retrieve">📑 Chunks bruts</button>
+          <button class="seg-tab" data-ragtab="rerank">📊 Re-ranking</button>
+        </div>
+
+        <div class="rag-panel active" id="rag-search">
+          <form class="card form-col" id="searchForm">
+            <div class="field">
+              <label for="sQuery">Votre question <span class="req">*</span></label>
+              <textarea id="sQuery" rows="3" placeholder="ex : Quelle est la procédure de vidange de la pompe P-101 ?" required></textarea>
+            </div>
+            <div class="form-row">
+              <div class="field field-sm">
+                <label for="sTopK">Top K</label>
+                <input type="number" id="sTopK" value="5" min="1" max="50">
+              </div>
+              <label class="check">
+                <input type="checkbox" id="sRerank" checked>
+                <span>Re-ranking</span>
+              </label>
+              <label class="check">
+                <input type="checkbox" id="sGenerate" checked>
+                <span>Génération LLM</span>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-lg" id="btnSearch">Rechercher</button>
+            </div>
+          </form>
+          <div id="searchResult"></div>
+        </div>
+
+        <div class="rag-panel" id="rag-retrieve">
+          <form class="card form-col" id="retrieveForm">
+            <div class="field">
+              <label for="rQuery">Requête <span class="req">*</span></label>
+              <textarea id="rQuery" rows="2" placeholder="Texte à rechercher dans les chunks…" required></textarea>
+            </div>
+            <div class="form-row">
+              <div class="field field-sm">
+                <label for="rTopK">Top K</label>
+                <input type="number" id="rTopK" value="10" min="1" max="100">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-lg" id="btnRetrieve">Récupérer</button>
+            </div>
+          </form>
+          <div id="retrieveResult"></div>
+        </div>
+
+        <div class="rag-panel" id="rag-rerank">
+          <form class="card form-col" id="rerankForm">
+            <div class="field">
+              <label for="rrQuery">Requête <span class="req">*</span></label>
+              <input type="text" id="rrQuery" placeholder="Question de référence" required>
+            </div>
+            <div class="field">
+              <label for="rrCandidates">Candidats (JSON) <span class="req">*</span></label>
+              <textarea id="rrCandidates" rows="7" required
+                placeholder='[{"chunk_id": "c1", "content": "Texte du chunk…", "score": 0.42}]'></textarea>
+            </div>
+            <div class="form-row">
+              <div class="field field-sm">
+                <label for="rrTopK">Top K</label>
+                <input type="number" id="rrTopK" min="1" placeholder="tous">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-lg" id="btnRerank">Re-classer</button>
+            </div>
+          </form>
+          <div id="rerankResult"></div>
+        </div>
+      </section>
+
+      <!-- ═══════════ STRATÉGIES ═══════════ -->
+      <section class="section" id="section-strategies">
+        <div class="section-head">
+          <div>
+            <h2>Stratégies disponibles</h2>
+            <p class="section-desc">Composants enregistrés pour chaque couche du pipeline RAG.</p>
+          </div>
+          <button class="btn btn-outline" id="stratRefresh">
+            <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            Actualiser
+          </button>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="card strat-card">
+            <h3>🔎 Récupération <span class="tag">retrieval</span></h3>
+            <div class="chips" id="stratRetrieval"></div>
+          </div>
+          <div class="card strat-card">
+            <h3>♻️ Re-ranking <span class="tag">reranker</span></h3>
+            <div class="chips" id="stratReranker"></div>
+          </div>
+          <div class="card strat-card">
+            <h3>🤖 LLM <span class="tag">génération</span></h3>
+            <div class="chips" id="stratLlm"></div>
+          </div>
+          <div class="card strat-card">
+            <h3>🧮 Embedding <span class="tag">vectorisation</span></h3>
+            <div class="chips" id="stratEmbedding"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ CONNEXION ═══════════ -->
+      <section class="section" id="section-settings">
+        <div class="section-head">
+          <div>
+            <h2>Connexion à l'API</h2>
+            <p class="section-desc">Configurez l'URL de l'API et votre clé d'authentification Bearer.</p>
+          </div>
+        </div>
+
+        <form class="card form-col settings-card" id="cfgForm">
+          <div class="field">
+            <label for="cfgUrl">URL de l'API</label>
+            <input type="url" id="cfgUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+          </div>
+          <div class="field">
+            <label for="cfgToken">Clé API (RAG_API_KEY)</label>
+            <div class="token-row">
+              <input type="password" id="cfgToken" placeholder="VOTRE_TOKEN_SECU" autocomplete="off">
+              <button type="button" class="btn btn-ghost" id="tokenToggle" title="Afficher / masquer">👁</button>
+            </div>
+            <p class="hint">Stockée uniquement dans le localStorage de votre navigateur.</p>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline" id="btnTestConnexion">Tester la connexion</button>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+          </div>
+          <div id="cfgStatus"></div>
+        </form>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modal détail document -->
+  <div class="modal-overlay hidden" id="docModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="docModalTitle">Détail du document</h3>
+        <button class="modal-close" data-close="docModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="docMeta" class="doc-meta"></div>
+        <h4 class="sub-title">Chunks</h4>
+        <div id="docChunks"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal confirmation suppression -->
+  <div class="modal-overlay hidden" id="confirmModal">
+    <div class="modal modal-sm">
+      <div class="modal-head">
+        <h3>Confirmer la suppression</h3>
+        <button class="modal-close" data-close="confirmModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmText">Cette action est irréversible.</p>
+        <div class="form-actions">
+          <button class="btn btn-ghost" data-close="confirmModal">Annuler</button>
+          <button class="btn btn-danger" id="confirmYes">Supprimer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

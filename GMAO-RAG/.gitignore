@@ -1,0 +1,84 @@
+# ═══════════════════════════════════════════════════════════════════
+# GMAO-RAG — .gitignore
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Python ──────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# ── Virtual environment ─────────────────────────────────────────
+.venv/
+venv/
+ENV/
+
+# ── Dépendances / build ────────────────────────────────────────
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# ── Environnement / secrets ────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.env.bak
+
+# ── IDE / éditeurs ─────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+*.sublime-project
+*.sublime-workspace
+
+# ── Système ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.lnk
+
+# ── Tests / couverture ─────────────────────────────────────────
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+
+# ── Type checking / linters ────────────────────────────────────
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+
+# ── Logs ───────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Qdrant (données volumineuses) ──────────────────────────────
+qdrant_storage/
+
+# ── Fichiers temporaires / backups ─────────────────────────────
+tmp/
+temp/
+*.bak
+*.tmp
+
+# ── Données sensibles ──────────────────────────────────────────
+# Ne jamais commit ces fichiers contenant des données internes
+app/data_sources/CORRECTIONS_APPLIQUEES.md
+app/data_sources/database/AGENT_CONTEXT.md
+tmp/data_sources_tmp/database/AGENT_CONTEXT.md
+
+# ── Backups VS Code (fichier Windows tracké par erreur) ────────
+%APPDATA%/
