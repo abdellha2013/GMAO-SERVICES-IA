@@ -583,7 +583,6 @@ $predResponse = Http::post('http://127.0.0.1:8200/api/v1/predictions', [
 | GMAO-API | 8200 | http://127.0.0.1:8200 |
 | GMAO-ML | 8100 | http://127.0.0.1:8100 |
 | MySQL | 3306 | 127.0.0.1:3306/gmao_rag |
-| Dashboard | 8200 | http://127.0.0.1:8200/ |
 
 ## Annexe B : Variables d'environnement GMAO-API
 

@@ -76,8 +76,8 @@ uploads/
 
 # ═══════════════════════════════════════════════════════════════════
 # GMAO-API — passerelle capteurs → ML → Laravel
-# (le .env est déjà couvert par la section secrets ; rien d'autre à ignorer)
 # ═══════════════════════════════════════════════════════════════════
+GMAO-API/static/
 
 # ── Notebooks ──────────────────────────────────────────────────
 .ipynb_checkpoints/
