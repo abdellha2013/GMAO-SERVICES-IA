@@ -9,8 +9,6 @@ from fastapi import APIRouter, Depends, Request
 from gmao_api.api.auth import verify_api_key
 from gmao_api.exceptions import ApiError
 from gmao_api.models.schemas import (
-    AlertsResponse,
-    ChannelsResponse,
     HealthResponse,
     PredictionsRequest,
     PredictionsResponse,
@@ -23,26 +21,16 @@ logger = logging.getLogger("gmao_api.routes")
 router = APIRouter()
 
 
-def _orchestrator(request: Request):
-    return request.app.state.orchestrator
-
-
-def _settings(request: Request):
-    return request.app.state.settings
-
-
 @router.get("/healthz", response_model=HealthResponse, tags=["health"])
 async def healthz(request: Request) -> HealthResponse:
     """Sonde de disponibilité (non authentifiée)."""
 
-    settings = request.app.state.settings
     ml_ok = await request.app.state.ml_client.health()
     return HealthResponse(
         status="ok" if ml_ok else "degraded",
         service="gmao-api",
         version=request.app.state.version,
         ml_api_reachable=ml_ok,
-        laravel_mode="simulated" if settings.simulate_laravel else "real",
     )
 
 
@@ -52,7 +40,7 @@ async def create_predictions(
     request: Request,
     _token: str = Depends(verify_api_key),
 ) -> PredictionsResponse:
-    """Relevés réels → prédiction ML → alertes Laravel si panne."""
+    """Relevés réels → prédiction ML."""
 
     logger.info("POST /predictions — %d relevé(s)", len(payload.readings))
     return await request.app.state.orchestrator.process(list(payload.readings))
@@ -83,42 +71,4 @@ async def simulate(
     return await request.app.state.orchestrator.process(readings)
 
 
-@router.get("/alerts", response_model=AlertsResponse, tags=["alerts"])
-async def list_alerts(
-    request: Request,
-    _token: str = Depends(verify_api_key),
-) -> AlertsResponse:
-    """Journal des demandes d'intervention émises depuis le démarrage."""
-
-    records = request.app.state.journal.all()
-    return AlertsResponse(count=len(records), alerts=records)
-
-
-@router.get("/laravel/interventions", tags=["laravel"])
-async def laravel_inbox(
-    request: Request,
-    _token: str = Depends(verify_api_key),
-) -> dict:
-    """Boîte de réception côté backend (proxy lecture vers Laravel/mock)."""
-
-    settings = request.app.state.settings
-    result = await request.app.state.laravel_client.fetch_interventions()
-    return {
-        "mode": "simulated" if settings.simulate_laravel else "real",
-        **result,
-    }
-
-
-@router.get("/channels", response_model=ChannelsResponse, tags=["channels"])
-async def list_channels(
-    request: Request,
-    _token: str = Depends(verify_api_key),
-) -> ChannelsResponse:
-    """Journal réseau détaillé des échanges HTTP entre GMAO-API et Laravel."""
-
-    journal = request.app.state.channel_journal
-    exchanges = journal.all()
-    return ChannelsResponse(count=len(exchanges), exchanges=exchanges)
-
-
-__all__ = ["router", "_orchestrator", "_settings", "ApiError"]
+__all__ = ["router", "ApiError"]

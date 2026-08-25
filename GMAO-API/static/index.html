@@ -9,7 +9,6 @@
     --bg: #0f172a; --panel: #1e293b; --panel2: #273449; --line: #334155;
     --text: #e2e8f0; --muted: #94a3b8;
     --accent: #38bdf8; --ok: #4ade80; --warn: #fbbf24; --danger: #f87171;
-    --orange: #fb923c;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; }
@@ -28,12 +27,6 @@
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
   .card > h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding: 12px 16px; border-bottom: 1px solid var(--line); display:flex; align-items:center; gap:8px; }
   .card .body { padding: 16px; }
-  label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
-  input, select, button {
-    width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line);
-    background: var(--bg); color: var(--text); font-size: 13px; outline: none;
-  }
-  input:focus { border-color: var(--accent); }
   button.big {
     background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: #082f49;
     border: none; cursor: pointer; font-weight: 800; font-size: 17px;
@@ -43,7 +36,6 @@
   }
   button.big:hover { filter: brightness(1.08); transform: translateY(-1px); }
   button.big:active { transform: translateY(1px); }
-  button.big:disabled { opacity: .6; cursor: wait; transform: none; }
   button.ghost { background: transparent; border: 1px solid var(--line); cursor: pointer; width: auto; padding: 6px 12px; }
   button.ghost:hover { border-color: var(--accent); color: var(--accent); }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -56,10 +48,6 @@
   .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 700; font-size: 11px; }
   .b-panne { background: rgba(248,113,113,.18); color: var(--danger); }
   .b-saine { background: rgba(74,222,128,.15); color: var(--ok); }
-  .b-sent { background: rgba(56,189,248,.15); color: var(--accent); }
-  .b-simulated { background: rgba(251,191,36,.15); color: var(--warn); }
-  .b-failed { background: rgba(248,113,113,.18); color: var(--danger); }
-  .b-none { background: var(--panel2); color: var(--muted); }
   .empty { color: var(--muted); text-align: center; padding: 22px; font-style: italic; }
   .toast { position: fixed; bottom: 22px; right: 22px; max-width: 420px; padding: 12px 16px; border-radius: 10px; font-size: 13px; z-index: 50; box-shadow: 0 8px 30px rgba(0,0,0,.45); display: none; }
   .toast.err { background: #7f1d1d; color: #fecaca; display: block; }
@@ -97,8 +85,7 @@
         <div class="hint">
           Comportement réaliste : les machines sont normalement saines —
           <b>panne rare (≈ 5 % des relevés)</b>. Chaque relevé s'affiche
-          <b>un par un</b> dans le tableau ; alerte Laravel si panne détectée.
-          Un second clic met la génération en pause.
+          <b>un par un</b> dans le tableau. Un second clic met la génération en pause.
         </div>
       </div>
     </div>
@@ -127,32 +114,8 @@
       <div class="summary" style="padding:12px 16px 0" id="stats"></div>
       <div class="draw" id="drawinfo"></div>
       <table>
-        <thead><tr><th>Heure</th><th>Équipement</th><th>Prédiction</th><th>P(panne)</th><th>Alerte</th><th>Détails</th></tr></thead>
-        <tbody id="results"><tr><td colspan="6" class="empty">Cliquez sur « ▶ Démarrer la surveillance » — chaque relevé apparaîtra ici un par un.</td></tr></tbody>
-      </table>
-    </div>
-
-    <div class="card">
-      <h2>🚨 Journal des alertes émises <span class="spacer"></span>
-        <button class="ghost" onclick="loadAlerts()">↻</button></h2>
-      <table>
-        <thead><tr><th>Heure</th><th>Équipement</th><th>P(panne)</th><th>Livraison</th><th>Priorité</th><th>Titre</th></tr></thead>
-        <tbody id="alerts"><tr><td colspan="6" class="empty">Aucune alerte pour l'instant.</td></tr></tbody>
-      </table>
-    </div>
-
-    <div class="card">
-      <h2>📥 Boîte « Laravel » — demande_interventions reçues
-        <span class="spacer"></span><button class="ghost" onclick="loadInbox()">↻</button></h2>
-      <div class="body" id="inbox"><div class="empty">—</div></div>
-    </div>
-
-    <div class="card">
-      <h2>🔗 Canal GMAO ↔ Laravel — échanges HTTP détaillés
-        <span class="spacer"></span><button class="ghost" onclick="loadChannels()">↻</button></h2>
-      <table>
-        <thead><tr><th>Heure</th><th>Méthode</th><th>URL</th><th>Requête</th><th>Status</th><th>Réponse</th><th>Latence</th></tr></thead>
-        <tbody id="channels"><tr><td colspan="7" class="empty">Aucun échange pour l'instant.</td></tr></tbody>
+        <thead><tr><th>Heure</th><th>Équipement</th><th>Prédiction</th><th>P(panne)</th><th>Détails</th></tr></thead>
+        <tbody id="results"><tr><td colspan="5" class="empty">Cliquez sur « ▶ Démarrer la surveillance » — chaque relevé apparaîtra ici un par un.</td></tr></tbody>
       </table>
     </div>
 
@@ -163,7 +126,6 @@
 
 <!-- ══════════════════ SCRIPTS ══════════════════ -->
 <script>
-/* Catalogue local (copie de gmao_api/services/equipment_catalog.py) */
 const EQUIPEMENTS = [
   [1,"Compresseur industriel","elevee"],[2,"Pompe hydraulique","critique"],
   [3,"Moteur électrique","moyenne"],[4,"Convoyeur industriel","elevee"],
@@ -180,7 +142,7 @@ function toast(msg, kind = "err") {
   clearTimeout(t._timer); t._timer = setTimeout(() => t.className = "toast", 4500);
 }
 
-async function api(path, options = {}, auth = true) {
+async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   const response = await fetch("/api/v1" + path, { ...options, headers });
   if (!response.ok) {
@@ -191,48 +153,34 @@ async function api(path, options = {}, auth = true) {
   return response.json();
 }
 
-const eqName = (id) => EQUIPEMENTS.find(e => e[0] === Number(id))?.[1] ?? ("#" + id);
-
-/* ── santé services ─────────────────────────────── */
 async function loadHealth() {
   try {
-    const h = await api("/healthz", {}, false);
+    const h = await api("/healthz");
     $("pills").innerHTML =
       `<span class="pill ${h.ml_api_reachable ? "ok" : "bad"}">ML ${h.ml_api_reachable ? "en ligne" : "hors ligne"}</span>` +
-      `<span class="pill info">Laravel : ${h.laravel_mode}</span>` +
       `<span class="pill ok">API v${h.version}</span>`;
     $("svc").innerHTML = `
       <table>
         <tr><td>GMAO-ML (:8100)</td><td style="text-align:right">${h.ml_api_reachable ? '<span class="badge b-saine">rejoint ✓</span>' : '<span class="badge b-panne">injoignable ✗</span>'}</td></tr>
-        <tr><td>Mode Laravel</td><td style="text-align:right"><span class="badge b-simulated">${h.laravel_mode}</span></td></tr>
         <tr><td>Version passerelle</td><td style="text-align:right">${h.version}</td></tr>
       </table>`;
   } catch (e) { $("pills").innerHTML = `<span class="pill bad">API injoignable</span>`; }
 }
 
-/* ── Un clic démarre, un second met en pause ────── */
-let running = false;
-let busy = false;
-let nextTimer = null;
-let tickTimer = null;
-let nextAt = 0;
-
-/* Comportement réaliste : UNE machine par cycle, panne RARE. */
-const FAILURE_PROBABILITY = 0.05;                  /* ≈ 5 % des relevés */
-const randInterval = () => 6 + Math.random() * 8;  /* 6–14 s (≈ 10 s) */
-
-/* Statistiques cumulées de la session */
-let totalReadings = 0, totalPannes = 0, totalAlertes = 0;
+let running = false, busy = false, nextTimer = null, tickTimer = null, nextAt = 0;
+const FAILURE_PROBABILITY = 0.05;
+const randInterval = () => 6 + Math.random() * 8;
+let totalReadings = 0, totalPannes = 0;
 let lastModelVersion = "?";
 const resultByKey = new Map();
 let keySeq = 0;
 
 function resetSession() {
-  totalReadings = 0; totalPannes = 0; totalAlertes = 0;
+  totalReadings = 0; totalPannes = 0;
   resultByKey.clear();
   $("stats").innerHTML = "";
   $("drawinfo").textContent = "";
-  $("results").innerHTML = emptyRow(6, "En attente du premier relevé…");
+  $("results").innerHTML = emptyRow(5, "En attente du premier relevé…");
 }
 
 function toggleRun() { running ? pause() : start(); }
@@ -241,7 +189,7 @@ async function start() {
   running = true;
   resetSession();
   $("rollbtn").innerHTML = "⏸ Mettre<br>en pause";
-  await roll();          /* premier relevé immédiat */
+  await roll();
   if (running) scheduleNext();
 }
 
@@ -249,11 +197,7 @@ function scheduleNext() {
   const delay = randInterval();
   nextAt = Date.now() + delay * 1000;
   clearTimeout(nextTimer);
-  nextTimer = setTimeout(async () => {
-    if (!running) return;
-    await roll();
-    scheduleNext();
-  }, delay * 1000);
+  nextTimer = setTimeout(async () => { if (!running) return; await roll(); scheduleNext(); }, delay * 1000);
   clearInterval(tickTimer);
   tickTimer = setInterval(updateCountdown, 300);
   updateCountdown();
@@ -273,7 +217,6 @@ function pause() {
   $("genstatus").textContent = "⏸ En pause — cliquez sur ▶ pour reprendre.";
 }
 
-/* Un SEUL relevé par cycle : une machine tirée au hasard, panne rare. */
 async function roll() {
   if (busy) return;
   busy = true;
@@ -287,8 +230,7 @@ async function roll() {
     appendResult(data.results[0]);
     const r = data.results[0];
     if (r.prediction === 1) {
-      toast(`🚨 ${r.equipement_nom} — PANNE prédite (P=${(r.probability_failure * 100).toFixed(1)} %), alerte ${r.alert_delivery}`, "err");
-      loadAlerts(); loadInbox();
+      toast(`🚨 ${r.equipement_nom} — PANNE prédite (P=${(r.probability_failure * 100).toFixed(1)} %)`, "err");
     }
   } catch (e) {
     toast("Simulation échouée : " + e.message);
@@ -297,19 +239,16 @@ async function roll() {
   }
 }
 
-/* Ajoute le relevé EN TÊTE du tableau — un par un, jamais en lot. */
 function appendResult(r) {
   const key = ++keySeq;
   resultByKey.set(key, r);
   totalReadings++;
   if (r.prediction === 1) totalPannes++;
-  if (["sent", "simulated"].includes(r.alert_delivery)) totalAlertes++;
 
   $("stats").innerHTML = `
     <div class="stat"><b>${totalReadings}</b><span>relevés</span></div>
     <div class="stat"><b style="color:var(--danger)">${totalPannes}</b><span>pannes prédites</span></div>
-    <div class="stat"><b style="color:var(--accent)">${totalAlertes}</b><span>alertes livrées</span></div>
-    <div class="stat"><b>${((totalPannes / totalReadings) * 100).toFixed(1)}%</b><span>taux panne observé</span></div>`;
+    <div class="stat"><b>${totalReadings ? ((totalPannes / totalReadings) * 100).toFixed(1) : "0"}%</b><span>taux panne</span></div>`;
 
   $("drawinfo").textContent =
     `Dernier relevé · ${r.equipement_nom} · P(panne) = ${(r.probability_failure * 100).toFixed(1)} %` +
@@ -328,10 +267,9 @@ function appendResult(r) {
     <td>${r.equipement_nom}</td>
     <td>${r.prediction === 1 ? '<span class="badge b-panne">PANNE</span>' : '<span class="badge b-saine">SAINE</span>'}</td>
     <td><b>${(r.probability_failure * 100).toFixed(1)}%</b></td>
-    <td>${deliveryBadge(r.alert_delivery)}</td>
     <td style="color:var(--muted)">▸ voir</td>`;
   tbody.prepend(tr);
-  while (tbody.rows.length > 50) tbody.deleteRow(-1);   /* garde-fou mémoire */
+  while (tbody.rows.length > 50) tbody.deleteRow(-1);
 }
 
 function toggleDetail(key) {
@@ -341,123 +279,20 @@ function toggleDetail(key) {
   const ref = tbody.querySelector(`tr[data-key="${key}"]`);
   const detail = document.createElement("tr");
   detail.className = "detail";
-  detail.innerHTML = `<td colspan="6"><pre>${JSON.stringify({
-    demande_intervention: r.demande_intervention,
-    laravel_response: r.laravel_response,
-  }, null, 2)}</pre></td>`;
-  ref.after(detail);
-}
-
-const deliveryBadge = (d) => ({
-  sent: '<span class="badge b-sent">envoyée → Laravel</span>',
-  simulated: '<span class="badge b-simulated">simulée</span>',
-  failed: '<span class="badge b-failed">échec livraison</span>',
-  not_triggered: '<span class="badge b-none">non déclenchée</span>',
-}[d] ?? d);
-
-/* ── journal alertes ────────────────────────────── */
-async function loadAlerts() {
-  try {
-    const data = await api("/alerts");
-    if (!data.count) { $("alerts").innerHTML = emptyRow(6, "Aucune alerte pour l'instant."); return; }
-    $("alerts").innerHTML = data.alerts.slice().reverse().map(a => `
-      <tr>
-        <td style="white-space:nowrap">${a.timestamp.split("T")[1] ?? a.timestamp}</td>
-        <td>${a.equipement_nom}</td>
-        <td><b>${(a.probability_failure * 100).toFixed(1)}%</b></td>
-        <td>${deliveryBadge(a.delivery)}</td>
-        <td>${a.demande_intervention?.priorite ?? "—"}</td>
-        <td style="color:var(--muted)">${a.demande_intervention?.titre ?? ""}</td>
-      </tr>`).join("");
-  } catch (e) { $("alerts").innerHTML = emptyRow(6, "Clé API invalide ?"); }
-}
-
-/* ── boîte laravel ──────────────────────────────── */
-async function loadInbox() {
-  try {
-    const data = await api("/laravel/interventions");
-    if (!data.reachable) {
-      $("inbox").innerHTML = `<div class="empty">Backend non joignable — mode « ${data.mode} » : lance scripts/mock_laravel.py sur le port 9000.</div>`;
-      return;
-    }
-    const rows = data.body?.data ?? [];
-    if (!rows.length) { $("inbox").innerHTML = `<div class="empty">Aucune demande d'intervention côté Laravel (mode ${data.mode}).</div>`; return; }
-    $("inbox").innerHTML = `
-      <table><thead><tr><th>id_demande</th><th>Date création</th><th>Équipement</th><th>User</th><th>Priorité</th><th>Statut</th><th>Titre</th></tr></thead><tbody>
-      ${rows.map(row => `<tr>
-        <td><b>${row.id_demande}</b></td><td>${row.date_creation ?? "—"}</td>
-        <td>${eqName(row.id_equipement)} (#${row.id_equipement})</td>
-        <td>${row.id_utilisateur}${row.id_utilisateur === 1 ? " (IA)" : ""}</td>
-        <td>${row.priorite}</td><td>${row.statut}</td>
-        <td style="color:var(--muted)">${row.titre}</td></tr>`).join("")}
-      </tbody></table>`;
-  } catch (e) { $("inbox").innerHTML = `<div class="empty">${e.message}</div>`; }
-}
-
-/* ── journal réseau canal GMAO ↔ Laravel ──────────── */
-const channelKeySeq = new Map();
-
-async function loadChannels() {
-  try {
-    const data = await api("/channels");
-    if (!data.count) { $("channels").innerHTML = emptyRow(7, "Aucun échange HTTP pour l'instant."); return; }
-    $("channels").innerHTML = data.exchanges.slice().reverse().map((x, i) => {
-      const key = data.exchanges.length - i;
-      channelKeySeq.set(key, x);
-      const reqPreview = x.request_body ? JSON.stringify(x.request_body).slice(0, 60) + (JSON.stringify(x.request_body).length > 60 ? "…" : "") : "—";
-      const resPreview = x.response_body ? JSON.stringify(x.response_body).slice(0, 60) + (JSON.stringify(x.response_body).length > 60 ? "…" : "") : "—";
-      const modeBadge = {
-        sent: '<span class="badge b-sent">envoyé</span>',
-        simulated: '<span class="badge b-simulated">simulé</span>',
-        failed: '<span class="badge b-failed">échoué</span>',
-      }[x.mode] ?? x.mode;
-      return `<tr class="click" onclick="toggleChannelDetail(${key})">
-        <td style="white-space:nowrap;color:var(--muted)">${x.timestamp.split("T")[1] ?? x.timestamp}</td>
-        <td><b>${x.method}</b></td>
-        <td style="font-size:12px">${x.url}</td>
-        <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${reqPreview}</td>
-        <td>${x.response_status ? `<b>${x.response_status}</b>` : modeBadge}</td>
-        <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${resPreview}</td>
-        <td style="white-space:nowrap">${x.duration_ms.toFixed(1)} ms</td>
-      </tr>`;
-    }).join("");
-  } catch (e) { $("channels").innerHTML = `<div class="empty">${e.message}</div>`; }
-}
-
-function toggleChannelDetail(key) {
-  const tbody = $("channels");
-  for (const row of [...tbody.rows]) if (row.classList.contains("detail")) row.remove();
-  const x = channelKeySeq.get(key); if (!x) return;
-  const ref = tbody.querySelector(`tr[onclick*="${key}"]`);
-  if (!ref) return;
-  const detail = document.createElement("tr");
-  detail.className = "detail";
-  const fullPayload = {
-    timestamp: x.timestamp,
-    method: x.method,
-    url: x.url,
-    mode: x.mode,
-    duration_ms: x.duration_ms,
-    request_body: x.request_body,
-    response_status: x.response_status,
-    response_body: x.response_body,
-    error: x.error,
-  };
-  detail.innerHTML = `<td colspan="7"><pre style="margin:0;white-space:pre-wrap;word-break:break-all;font-size:12px">${JSON.stringify(fullPayload, null, 2)}</pre></td>`;
+  detail.innerHTML = `<td colspan="5"><pre>${JSON.stringify(r, null, 2)}</pre></td>`;
   ref.after(detail);
 }
 
 const emptyRow = (span, msg = "Rien à afficher.") =>
   `<tr><td colspan="${span}" class="empty">${msg}</td></tr>`;
 
-/* ── init / auto-refresh ────────────────────────── */
 let timer = null;
 $("autoref").addEventListener("change", (e) => {
   clearInterval(timer);
   if (e.target.checked) timer = setInterval(refreshAll, 5000);
 });
 
-function refreshAll() { loadHealth(); loadAlerts(); loadInbox(); loadChannels(); }
+function refreshAll() { loadHealth(); }
 refreshAll();
 </script>
 </body>

@@ -48,21 +48,17 @@ def make_settings(**overrides: Any) -> Settings:
         ml_api_url="http://ml.test",
         ml_api_key="ml-key",
         ml_retries=0,
-        simulate_laravel=True,
-        laravel_api_url="http://laravel.test",
-        laravel_ia_user_id=1,
         critical_probability=0.90,
     )
     base.update(overrides)
     return Settings(**base)
 
 
-def make_app(ml_handler=None, settings: Settings | None = None, laravel_transport=None):
+def make_app(ml_handler=None, settings: Settings | None = None):
     transport = httpx.MockTransport(ml_handler or fake_ml_handler())
     app = create_app(
         settings=settings or make_settings(),
         ml_transport=transport,
-        laravel_transport=laravel_transport,
     )
     return app
 

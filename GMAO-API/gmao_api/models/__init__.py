@@ -1,8 +1,6 @@
 """Schémas de l'API GMAO-API."""
 
 from gmao_api.models.schemas import (
-    AlertRecord,
-    AlertsResponse,
     HealthResponse,
     PredictionOutcome,
     PredictionsRequest,
@@ -17,7 +15,5 @@ __all__ = [
     "SimulateRequest",
     "PredictionOutcome",
     "PredictionsResponse",
-    "AlertRecord",
-    "AlertsResponse",
     "HealthResponse",
 ]

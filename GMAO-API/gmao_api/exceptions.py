@@ -42,11 +42,4 @@ class MlUpstreamError(ApiError):
     error_code = "ML_UNREACHABLE"
 
 
-class LaravelDeliveryError(ApiError):
-    """Échec non bloquant de livraison d'une alerte vers Laravel."""
-
-    http_status = 502
-    error_code = "LARAVEL_DELIVERY_FAILED"
-
-
-__all__ = ["ApiError", "MlUpstreamError", "LaravelDeliveryError"]
+__all__ = ["ApiError", "MlUpstreamError"]

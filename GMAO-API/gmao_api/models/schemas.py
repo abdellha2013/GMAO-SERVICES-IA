@@ -12,21 +12,12 @@ __all__ = [
     "SimulateRequest",
     "PredictionOutcome",
     "PredictionsResponse",
-    "AlertRecord",
-    "AlertsResponse",
     "HealthResponse",
-    "ChannelExchange",
-    "ChannelsResponse",
 ]
 
 
 class SensorReading(BaseModel):
-    """Relevé capteurs d'une machine (schéma AI4I) rattaché à un équipement réel.
-
-    Les clés exactes attendues par le modèle ML sont utilisables telles quelles
-    (alias) ou via les noms pythoniques. ``equipement_id`` doit référencer une
-    ligne existante de la table ``equipements`` côté Laravel.
-    """
+    """Relevé capteurs d'une machine (schéma AI4I) rattaché à un équipement réel."""
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -72,34 +63,12 @@ class PredictionOutcome(BaseModel):
     equipement_nom: str
     prediction: int
     probability_failure: float
-    alert_sent: bool
-    alert_delivery: Literal["sent", "simulated", "failed", "not_triggered"]
-    demande_intervention: dict[str, Any] | None = None
-    laravel_response: dict[str, Any] | None = None
+    model_version: str | None = None
 
 
 class PredictionsResponse(BaseModel):
     results: list[PredictionOutcome]
-    alerts_count: int
     model_version: str | None
-
-
-class AlertRecord(BaseModel):
-    """Entrée du journal des alertes émises depuis le démarrage."""
-
-    timestamp: str
-    equipement_id: int
-    equipement_nom: str
-    probability_failure: float
-    delivery: str
-    demande_intervention: dict[str, Any]
-    laravel_response: dict[str, Any] | None = None
-    model_version: str | None = None
-
-
-class AlertsResponse(BaseModel):
-    count: int
-    alerts: list[AlertRecord]
 
 
 class HealthResponse(BaseModel):
@@ -107,23 +76,3 @@ class HealthResponse(BaseModel):
     service: str = "gmao-api"
     version: str
     ml_api_reachable: bool
-    laravel_mode: Literal["real", "simulated"]
-
-
-class ChannelExchange(BaseModel):
-    """Un échange HTTP complet (requête + réponse) entre GMAO-API et Laravel."""
-
-    timestamp: str
-    method: Literal["POST", "GET"]
-    url: str
-    request_body: dict[str, Any] | list[Any] | None = None
-    response_status: int | None = None
-    response_body: dict[str, Any] | list[Any] | None = None
-    duration_ms: float = 0.0
-    mode: Literal["sent", "simulated", "failed"] = "sent"
-    error: str | None = None
-
-
-class ChannelsResponse(BaseModel):
-    count: int
-    exchanges: list[ChannelExchange]
