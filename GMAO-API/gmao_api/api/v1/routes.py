@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 
-from gmao_api.api.auth import verify_api_key
 from gmao_api.exceptions import ApiError
 from gmao_api.models.schemas import (
     HealthResponse,
@@ -23,7 +22,7 @@ router = APIRouter()
 
 @router.get("/healthz", response_model=HealthResponse, tags=["health"])
 async def healthz(request: Request) -> HealthResponse:
-    """Sonde de disponibilité (non authentifiée)."""
+    """Sonde de disponibilité."""
 
     ml_ok = await request.app.state.ml_client.health()
     return HealthResponse(
@@ -38,7 +37,6 @@ async def healthz(request: Request) -> HealthResponse:
 async def create_predictions(
     payload: PredictionsRequest,
     request: Request,
-    _token: str = Depends(verify_api_key),
 ) -> PredictionsResponse:
     """Relevés réels → prédiction ML."""
 
@@ -50,7 +48,6 @@ async def create_predictions(
 async def simulate(
     payload: SimulateRequest,
     request: Request,
-    _token: str = Depends(verify_api_key),
 ) -> PredictionsResponse:
     """Génère des relevés artificiels puis exécute la chaîne complète identique."""
 

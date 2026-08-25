@@ -44,9 +44,7 @@ def failing_ml_handler():
 
 def make_settings(**overrides: Any) -> Settings:
     base = dict(
-        api_key="test-key",
         ml_api_url="http://ml.test",
-        ml_api_key="ml-key",
         ml_retries=0,
         critical_probability=0.90,
     )
@@ -61,9 +59,6 @@ def make_app(ml_handler=None, settings: Settings | None = None):
         ml_transport=transport,
     )
     return app
-
-
-AUTH = {"Authorization": "Bearer test-key"}
 
 
 @pytest.fixture()

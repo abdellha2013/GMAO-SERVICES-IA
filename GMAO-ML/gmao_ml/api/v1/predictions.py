@@ -5,7 +5,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from gmao_ml.api.auth import verify_api_key
 from gmao_ml.api.deps import get_predictor
 from gmao_ml.inference import Predictor
 from gmao_ml.models.schemas import (
@@ -24,7 +23,6 @@ router = APIRouter(tags=["predictions"])
 async def predict(
     request: PredictRequest,
     predictor: Annotated[Predictor, Depends(get_predictor)],
-    _token: Annotated[str, Depends(verify_api_key)],
 ) -> PredictionItem:
     """Predict the machine state for a single feature vector."""
     result = predictor.predict_one(request.features)
@@ -39,7 +37,6 @@ async def predict(
 async def predict_batch(
     request: BatchPredictRequest,
     predictor: Annotated[Predictor, Depends(get_predictor)],
-    _token: Annotated[str, Depends(verify_api_key)],
 ) -> BatchPredictResponse:
     """Predict the machine state for a batch of feature vectors."""
     results = predictor.predict_batch(request.samples)
@@ -62,7 +59,6 @@ async def predict_batch(
 @router.get("/model/info", response_model=ModelInfoResponse)
 async def model_info(
     predictor: Annotated[Predictor, Depends(get_predictor)],
-    _token: Annotated[str, Depends(verify_api_key)],
 ) -> ModelInfoResponse:
     """Expose metadata of the currently loaded model."""
     metadata = predictor.metadata

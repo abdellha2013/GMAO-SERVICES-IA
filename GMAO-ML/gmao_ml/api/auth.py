@@ -1,12 +1,12 @@
-"""API key authentication middleware — DÉSACTIVÉ.
+"""Authentification GMAO-ML — DÉSACTIVÉE.
 
 Tous les services communiquent librement sans clé API.
-L'auth est complètement désactivée pour simplifier le développement.
 """
+
 from __future__ import annotations
 
 
-async def verify_api_key(authorize: str | None = None) -> str:
+async def verify_api_key() -> str:
     """Toujours accepter — pas d'authentification."""
     return "dev-mode"
 

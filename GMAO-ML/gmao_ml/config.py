@@ -64,7 +64,6 @@ class Settings:
         Paramètres de découpage train/test reproductible.
     """
 
-    api_key: str | None
     api_host: str
     api_port: int
 
@@ -116,12 +115,7 @@ def load_settings() -> Settings:
 
     load_dotenv(PROJECT_ROOT / ".env", override=False)
 
-    api_key = os.getenv("ML_API_KEY")
-    if api_key is not None and not api_key.strip():
-        api_key = None
-
     return Settings(
-        api_key=api_key,
         api_host=os.getenv("ML_API_HOST", "127.0.0.1"),
         api_port=int(os.getenv("ML_API_PORT", "8100")),
 

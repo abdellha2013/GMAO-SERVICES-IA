@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from tests.conftest import AUTH, failing_ml_handler, fake_ml_handler, make_app, make_settings
+from tests.conftest import failing_ml_handler, fake_ml_handler, make_app, make_settings
 
 
 def _reading(torque: float, equipement_id: int = 5) -> dict:
@@ -19,30 +19,19 @@ def _reading(torque: float, equipement_id: int = 5) -> dict:
     }
 
 
-class TestAuth:
-    def test_healthz_sans_auth(self, client: TestClient) -> None:
+class TestHealthz:
+    def test_healthz(self, client: TestClient) -> None:
         response = client.get("/api/v1/healthz")
         assert response.status_code == 200
         body = response.json()
         assert body["service"] == "gmao-api"
         assert body["ml_api_reachable"] is True
 
-    def test_predictions_sans_auth_401(self, client: TestClient) -> None:
-        assert client.post("/api/v1/predictions", json={"readings": [_reading(50.0)]}).status_code == 401
-
-    def test_mauvaise_cle_401(self, client: TestClient) -> None:
-        response = client.post(
-            "/api/v1/predictions",
-            json={"readings": [_reading(50.0)]},
-            headers={"Authorization": "Bearer wrong"},
-        )
-        assert response.status_code == 401
-
 
 class TestPredictions:
     def test_panne_predite_haute_probabilite(self, client: TestClient) -> None:
         payload = {"readings": [_reading(95.0)]}
-        response = client.post("/api/v1/predictions", json=payload, headers=AUTH)
+        response = client.post("/api/v1/predictions", json=payload)
         assert response.status_code == 200
         body = response.json()
         outcome = body["results"][0]
@@ -52,7 +41,7 @@ class TestPredictions:
 
     def test_saine_faible_probabilite(self, client: TestClient) -> None:
         payload = {"readings": [_reading(40.0)]}
-        response = client.post("/api/v1/predictions", json=payload, headers=AUTH)
+        response = client.post("/api/v1/predictions", json=payload)
         assert response.status_code == 200
         outcome = response.json()["results"][0]
         assert outcome["prediction"] == 0
@@ -60,7 +49,7 @@ class TestPredictions:
 
     def test_plusieurs_releves(self, client: TestClient) -> None:
         payload = {"readings": [_reading(95.0), _reading(40.0), _reading(88.0)]}
-        response = client.post("/api/v1/predictions", json=payload, headers=AUTH)
+        response = client.post("/api/v1/predictions", json=payload)
         assert response.status_code == 200
         body = response.json()
         assert len(body["results"]) == 3
@@ -70,19 +59,30 @@ class TestPredictions:
     def test_validation_releve_invalide_422(self, client: TestClient) -> None:
         bad = _reading(50.0)
         bad.pop("equipement_id")
-        response = client.post("/api/v1/predictions", json={"readings": [bad]}, headers=AUTH)
+        response = client.post("/api/v1/predictions", json={"readings": [bad]})
         assert response.status_code == 422
 
 
 class TestSimulate:
     def test_simulate_retourne_resultats(self, client: TestClient) -> None:
         payload = {"count": 6, "failure_rate": 0.0, "random_state": 5}
-        response = client.post("/api/v1/simulate", json=payload, headers=AUTH)
+        response = client.post("/api/v1/simulate", json=payload)
         assert response.status_code == 200
         body = response.json()
         assert len(body["results"]) == 6
         for result in body["results"]:
             assert result["prediction"] == 0
+
+    def test_simulate_retourne_readings(self, client: TestClient) -> None:
+        payload = {"count": 3, "failure_rate": 0.5, "random_state": 42}
+        response = client.post("/api/v1/simulate", json=payload)
+        assert response.status_code == 200
+        body = response.json()
+        assert body["readings"] is not None
+        assert len(body["readings"]) == 3
+        for reading in body["readings"]:
+            assert "equipement_id" in reading
+            assert "Torque [Nm]" in reading
 
 
 class TestErreursML:
@@ -92,7 +92,6 @@ class TestErreursML:
             response = client.post(
                 "/api/v1/simulate",
                 json={"count": 2, "failure_rate": 0.0},
-                headers=AUTH,
             )
         assert response.status_code == 503
         body = response.json()
