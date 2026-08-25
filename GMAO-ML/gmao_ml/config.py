@@ -35,10 +35,6 @@ class Settings:
 
     Attributes
     ----------
-    api_key:
-        Clé API pour protéger les endpoints (auth Bearer).
-        ``None`` → authentification désactivée (mode dev).
-
     api_host / api_port:
         Interface et port d'écoute du service de prédiction.
 
