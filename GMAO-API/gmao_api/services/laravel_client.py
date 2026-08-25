@@ -110,6 +110,7 @@ class LaravelClient:
             transport=transport,
         )
         self._channel_journal = channel_journal
+        self._simulated_interventions: list[dict[str, Any]] = []
 
     async def aclose(self) -> None:
         await self._client.aclose()
@@ -179,6 +180,7 @@ class LaravelClient:
                 duration_ms=0.0,
                 mode="simulated",
             )
+            self._simulated_interventions.append(simulated["data"])
             return "simulated", simulated
 
         http_payload = {k: v for k, v in payload.items() if not k.startswith("_")}
@@ -243,8 +245,20 @@ class LaravelClient:
     async def fetch_interventions(self) -> dict[str, Any]:
         """Récupère les demandes côté Laravel (proxy lecture pour le dashboard).
 
+        En mode simulated : retourne les interventions stockées en mémoire.
         Ne lève jamais : retourne ``{"reachable": bool, ...}``.
         """
+
+        if self._settings.simulate_laravel:
+            return {
+                "reachable": True,
+                "status": 200,
+                "mode": "simulated",
+                "body": {
+                    "count": len(self._simulated_interventions),
+                    "data": self._simulated_interventions,
+                },
+            }
 
         url = self._settings.laravel_alerts_path
         t0 = time.monotonic()

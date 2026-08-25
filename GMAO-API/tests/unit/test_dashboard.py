@@ -36,8 +36,9 @@ class TestInboxLaravel:
             body = test_client.get(
                 "/api/v1/laravel/interventions", headers=AUTH
             ).json()
-        assert body["reachable"] is False
+        assert body["reachable"] is True
         assert body["mode"] == "simulated"
+        assert body["body"]["data"] == []
 
     def test_proxy_lecture_mode_reel(self) -> None:
         def laravel_handler(request: httpx.Request) -> httpx.Response:
