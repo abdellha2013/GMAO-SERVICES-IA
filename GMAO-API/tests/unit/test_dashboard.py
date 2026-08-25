@@ -25,7 +25,7 @@ class TestDashboard:
 
 class TestInboxLaravel:
     def test_auth_requise(self, client: TestClient) -> None:
-        assert client.get("/api/v1/laravel/interventions").status_code == 422
+        assert client.get("/api/v1/laravel/interventions").status_code == 401
 
     def test_backend_injoignable_reponse_degradee(self) -> None:
         def failing(request: httpx.Request) -> httpx.Response:

@@ -25,7 +25,7 @@ class Settings:
     """Paramètres runtime de la passerelle."""
 
     # ── API elle-même ──────────────────────────────
-    api_key: str = "gmao-api-dev-key"
+    api_key: str = ""
     api_port: int = 8200
 
     # ── Modèle ML (GMAO-ML) ───────────────────────
@@ -51,7 +51,7 @@ def load_settings() -> Settings:
     """Construit les :class:`Settings` depuis l'environnement / le ``.env``."""
 
     return Settings(
-        api_key=os.getenv("GMAO_API_KEY", "gmao-api-dev-key"),
+        api_key=os.getenv("GMAO_API_KEY", ""),
         api_port=int(os.getenv("API_PORT", "8200")),
         ml_api_url=os.getenv("ML_API_URL", "http://127.0.0.1:8100").rstrip("/"),
         ml_api_key=os.getenv("ML_API_KEY", "gmao-ml-dev-key"),

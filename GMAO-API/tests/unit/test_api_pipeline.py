@@ -31,8 +31,8 @@ class TestAuth:
         assert body["ml_api_reachable"] is True
         assert body["laravel_mode"] == "simulated"
 
-    def test_endpoint_sans_en_tete_422(self, client: TestClient) -> None:
-        assert client.get("/api/v1/alerts").status_code == 422
+    def test_endpoint_sans_en_tete_401(self, client: TestClient) -> None:
+        assert client.get("/api/v1/alerts").status_code == 401
 
     def test_mauvaise_cle_401(self, client: TestClient) -> None:
         response = client.get("/api/v1/alerts", headers={"Authorization": "Bearer wrong"})
