@@ -30,7 +30,7 @@ class Settings:
 
     # ── Modèle ML (GMAO-ML) ───────────────────────
     ml_api_url: str = "http://127.0.0.1:8100"
-    ml_api_key: str = "gmao-ml-dev-key"
+    ml_api_key: str = ""
     ml_timeout_s: float = 10.0
     ml_retries: int = 2
 
@@ -54,7 +54,7 @@ def load_settings() -> Settings:
         api_key=os.getenv("GMAO_API_KEY", ""),
         api_port=int(os.getenv("API_PORT", "8200")),
         ml_api_url=os.getenv("ML_API_URL", "http://127.0.0.1:8100").rstrip("/"),
-        ml_api_key=os.getenv("ML_API_KEY", "gmao-ml-dev-key"),
+        ml_api_key=os.getenv("ML_API_KEY", ""),
         ml_timeout_s=float(os.getenv("ML_TIMEOUT_S", "10")),
         ml_retries=int(os.getenv("ML_RETRIES", "2")),
         simulate_laravel=_env_bool("SIMULATE_LARAVEL", True),

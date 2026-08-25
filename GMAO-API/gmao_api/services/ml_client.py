@@ -10,7 +10,7 @@ from typing import Any
 import httpx
 
 from gmao_api.config import Settings
-from gmao_api.exceptions import MlAuthError, MlUpstreamError
+from gmao_api.exceptions import MlUpstreamError
 
 logger = logging.getLogger("gmao_api.ml_client")
 
@@ -26,7 +26,6 @@ class MlClient:
         self._client = httpx.AsyncClient(
             base_url=settings.ml_api_url,
             timeout=settings.ml_timeout_s,
-            headers={"Authorization": f"Bearer {settings.ml_api_key}"},
             transport=transport,
         )
 
@@ -47,8 +46,6 @@ class MlClient:
 
         Raises
         ------
-        MlAuthError
-            Clé refusée (401).
         MlUpstreamError
             Injoignable après retries, statut inattendu ou corps invalide.
         """
@@ -77,19 +74,11 @@ class MlClient:
                         "model_version": body.get("model_version"),
                     }
 
-                if response.status_code == 401:
-                    raise MlAuthError(
-                        "Clé ML_API_KEY refusée par GMAO-ML.",
-                        details={"status": 401},
-                    )
-
                 raise MlUpstreamError(
                     f"GMAO-ML a répondu {response.status_code}.",
                     details={"status": response.status_code, "body": _safe_json(response)},
                 )
 
-            except MlAuthError:
-                raise
             except (httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError) as exc:
                 last_error = exc
                 if attempt < attempts:

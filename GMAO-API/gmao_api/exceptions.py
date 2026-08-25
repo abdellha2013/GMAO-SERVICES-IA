@@ -42,13 +42,6 @@ class MlUpstreamError(ApiError):
     error_code = "ML_UNREACHABLE"
 
 
-class MlAuthError(ApiError):
-    """Clé ML_API_KEY refusée par GMAO-ML."""
-
-    http_status = 500
-    error_code = "ML_AUTH_FAILED"
-
-
 class LaravelDeliveryError(ApiError):
     """Échec non bloquant de livraison d'une alerte vers Laravel."""
 
@@ -56,4 +49,4 @@ class LaravelDeliveryError(ApiError):
     error_code = "LARAVEL_DELIVERY_FAILED"
 
 
-__all__ = ["ApiError", "MlUpstreamError", "MlAuthError", "LaravelDeliveryError"]
+__all__ = ["ApiError", "MlUpstreamError", "LaravelDeliveryError"]
