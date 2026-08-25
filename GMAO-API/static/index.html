@@ -80,8 +80,6 @@
   <h1>GMAO<span>-API</span> · Dashboard de test</h1>
   <div class="pills" id="pills"></div>
   <div class="spacer"></div>
-  <label style="margin:0">Clé API <input id="apikey" style="width:170px" placeholder="GMAO_API_KEY"></label>
-  <button class="ghost" onclick="saveKey()">Enregistrer la clé</button>
 </header>
 
 <main>
@@ -167,9 +165,6 @@ const EQUIPEMENTS = [
 ];
 
 const $ = (id) => document.getElementById(id);
-let apiKey = localStorage.getItem("gmao_api_key") || "gmao-api-dev-key";
-$("apikey").value = apiKey;
-function saveKey() { apiKey = $("apikey").value.trim(); localStorage.setItem("gmao_api_key", apiKey); toast("Clé enregistrée.", "inf"); }
 
 function toast(msg, kind = "err") {
   const t = $("toast"); t.textContent = msg; t.className = "toast " + kind;
@@ -178,7 +173,6 @@ function toast(msg, kind = "err") {
 
 async function api(path, options = {}, auth = true) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-  if (auth && apiKey) headers["Authorization"] = "Bearer " + apiKey;
   const response = await fetch("/api/v1" + path, { ...options, headers });
   if (!response.ok) {
     let detail = response.status + " " + response.statusText;

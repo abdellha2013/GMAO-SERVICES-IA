@@ -38,7 +38,6 @@ class Settings:
     simulate_laravel: bool = True
     laravel_api_url: str = "http://127.0.0.1:9000"
     laravel_alerts_path: str = "/api/intervention-requests"
-    laravel_api_token: str | None = None
     laravel_ia_user_id: int = 1
 
     # ── Base de données (lecture table equipements) ──────────────
@@ -61,7 +60,6 @@ def load_settings() -> Settings:
         simulate_laravel=_env_bool("SIMULATE_LARAVEL", True),
         laravel_api_url=os.getenv("LARAVEL_API_URL", "http://127.0.0.1:9000").rstrip("/"),
         laravel_alerts_path=os.getenv("LARAVEL_ALERTS_PATH", "/api/intervention-requests"),
-        laravel_api_token=os.getenv("LARAVEL_API_TOKEN") or None,
         laravel_ia_user_id=int(os.getenv("LARAVEL_IA_USER_ID", "1")),
         equipements_db_url=os.getenv("EQUIPEMENTS_DB_URL") or None,
         critical_probability=float(os.getenv("CRITICAL_PROBABILITY", "0.90")),

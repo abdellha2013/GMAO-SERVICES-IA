@@ -128,14 +128,10 @@ class LaravelClient:
             return "simulated", simulated
 
         http_payload = {k: v for k, v in payload.items() if not k.startswith("_")}
-        headers = {"Content-Type": "application/json"}
-        token = self._settings.laravel_api_token
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
 
         try:
             response = await self._client.post(
-                self._settings.laravel_alerts_path, json=http_payload, headers=headers
+                self._settings.laravel_alerts_path, json=http_payload, headers={"Content-Type": "application/json"}
             )
         except httpx.HTTPError as exc:
             logger.error("Laravel injoignable : %s", exc)
@@ -164,9 +160,6 @@ class LaravelClient:
         """
 
         headers: dict[str, str] = {}
-        token = self._settings.laravel_api_token
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
         try:
             response = await self._client.get(
                 self._settings.laravel_alerts_path, headers=headers
