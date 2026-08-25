@@ -15,6 +15,8 @@ __all__ = [
     "AlertRecord",
     "AlertsResponse",
     "HealthResponse",
+    "ChannelExchange",
+    "ChannelsResponse",
 ]
 
 
@@ -106,3 +108,22 @@ class HealthResponse(BaseModel):
     version: str
     ml_api_reachable: bool
     laravel_mode: Literal["real", "simulated"]
+
+
+class ChannelExchange(BaseModel):
+    """Un échange HTTP complet (requête + réponse) entre GMAO-API et Laravel."""
+
+    timestamp: str
+    method: Literal["POST", "GET"]
+    url: str
+    request_body: dict[str, Any] | list[Any] | None = None
+    response_status: int | None = None
+    response_body: dict[str, Any] | list[Any] | None = None
+    duration_ms: float = 0.0
+    mode: Literal["sent", "simulated", "failed"] = "sent"
+    error: str | None = None
+
+
+class ChannelsResponse(BaseModel):
+    count: int
+    exchanges: list[ChannelExchange]

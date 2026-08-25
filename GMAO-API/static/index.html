@@ -147,6 +147,15 @@
       <div class="body" id="inbox"><div class="empty">—</div></div>
     </div>
 
+    <div class="card">
+      <h2>🔗 Canal GMAO ↔ Laravel — échanges HTTP détaillés
+        <span class="spacer"></span><button class="ghost" onclick="loadChannels()">↻</button></h2>
+      <table>
+        <thead><tr><th>Heure</th><th>Méthode</th><th>URL</th><th>Requête</th><th>Status</th><th>Réponse</th><th>Latence</th></tr></thead>
+        <tbody id="channels"><tr><td colspan="7" class="empty">Aucun échange pour l'instant.</td></tr></tbody>
+      </table>
+    </div>
+
   </div>
 </main>
 
@@ -385,6 +394,59 @@ async function loadInbox() {
   } catch (e) { $("inbox").innerHTML = `<div class="empty">${e.message}</div>`; }
 }
 
+/* ── journal réseau canal GMAO ↔ Laravel ──────────── */
+const channelKeySeq = new Map();
+
+async function loadChannels() {
+  try {
+    const data = await api("/channels");
+    if (!data.count) { $("channels").innerHTML = emptyRow(7, "Aucun échange HTTP pour l'instant."); return; }
+    $("channels").innerHTML = data.exchanges.slice().reverse().map((x, i) => {
+      const key = data.exchanges.length - i;
+      channelKeySeq.set(key, x);
+      const reqPreview = x.request_body ? JSON.stringify(x.request_body).slice(0, 60) + (JSON.stringify(x.request_body).length > 60 ? "…" : "") : "—";
+      const resPreview = x.response_body ? JSON.stringify(x.response_body).slice(0, 60) + (JSON.stringify(x.response_body).length > 60 ? "…" : "") : "—";
+      const modeBadge = {
+        sent: '<span class="badge b-sent">envoyé</span>',
+        simulated: '<span class="badge b-simulated">simulé</span>',
+        failed: '<span class="badge b-failed">échoué</span>',
+      }[x.mode] ?? x.mode;
+      return `<tr class="click" onclick="toggleChannelDetail(${key})">
+        <td style="white-space:nowrap;color:var(--muted)">${x.timestamp.split("T")[1] ?? x.timestamp}</td>
+        <td><b>${x.method}</b></td>
+        <td style="font-size:12px">${x.url}</td>
+        <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${reqPreview}</td>
+        <td>${x.response_status ? `<b>${x.response_status}</b>` : modeBadge}</td>
+        <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${resPreview}</td>
+        <td style="white-space:nowrap">${x.duration_ms.toFixed(1)} ms</td>
+      </tr>`;
+    }).join("");
+  } catch (e) { $("channels").innerHTML = `<div class="empty">${e.message}</div>`; }
+}
+
+function toggleChannelDetail(key) {
+  const tbody = $("channels");
+  for (const row of [...tbody.rows]) if (row.classList.contains("detail")) row.remove();
+  const x = channelKeySeq.get(key); if (!x) return;
+  const ref = tbody.querySelector(`tr[onclick*="${key}"]`);
+  if (!ref) return;
+  const detail = document.createElement("tr");
+  detail.className = "detail";
+  const fullPayload = {
+    timestamp: x.timestamp,
+    method: x.method,
+    url: x.url,
+    mode: x.mode,
+    duration_ms: x.duration_ms,
+    request_body: x.request_body,
+    response_status: x.response_status,
+    response_body: x.response_body,
+    error: x.error,
+  };
+  detail.innerHTML = `<td colspan="7"><pre style="margin:0;white-space:pre-wrap;word-break:break-all;font-size:12px">${JSON.stringify(fullPayload, null, 2)}</pre></td>`;
+  ref.after(detail);
+}
+
 const emptyRow = (span, msg = "Rien à afficher.") =>
   `<tr><td colspan="${span}" class="empty">${msg}</td></tr>`;
 
@@ -395,7 +457,7 @@ $("autoref").addEventListener("change", (e) => {
   if (e.target.checked) timer = setInterval(refreshAll, 5000);
 });
 
-function refreshAll() { loadHealth(); loadAlerts(); loadInbox(); }
+function refreshAll() { loadHealth(); loadAlerts(); loadInbox(); loadChannels(); }
 refreshAll();
 </script>
 </body>

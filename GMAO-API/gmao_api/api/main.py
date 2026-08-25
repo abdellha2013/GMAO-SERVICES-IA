@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 import gmao_api
 from gmao_api.config import Settings, load_settings
 from gmao_api.exceptions import ApiError
+from gmao_api.services.channel_journal import ChannelJournal
 from gmao_api.services.equipment_service import EquipmentService
 from gmao_api.services.journal import AlertJournal
 from gmao_api.services.laravel_client import LaravelClient
@@ -54,8 +55,11 @@ def create_app(
 
         app.state.equipment_service = EquipmentService(engine=db_engine)
 
+        app.state.channel_journal = ChannelJournal()
         app.state.ml_client = MlClient(resolved_settings, transport=ml_transport)
-        app.state.laravel_client = LaravelClient(resolved_settings, transport=laravel_transport)
+        app.state.laravel_client = LaravelClient(
+            resolved_settings, transport=laravel_transport, channel_journal=app.state.channel_journal
+        )
         app.state.journal = AlertJournal()
         app.state.orchestrator = PredictionOrchestrator(
             settings=resolved_settings,

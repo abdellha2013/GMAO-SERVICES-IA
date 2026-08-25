@@ -10,6 +10,7 @@ from gmao_api.api.auth import verify_api_key
 from gmao_api.exceptions import ApiError
 from gmao_api.models.schemas import (
     AlertsResponse,
+    ChannelsResponse,
     HealthResponse,
     PredictionsRequest,
     PredictionsResponse,
@@ -106,6 +107,18 @@ async def laravel_inbox(
         "mode": "simulated" if settings.simulate_laravel else "real",
         **result,
     }
+
+
+@router.get("/channels", response_model=ChannelsResponse, tags=["channels"])
+async def list_channels(
+    request: Request,
+    _token: str = Depends(verify_api_key),
+) -> ChannelsResponse:
+    """Journal réseau détaillé des échanges HTTP entre GMAO-API et Laravel."""
+
+    journal = request.app.state.channel_journal
+    exchanges = journal.all()
+    return ChannelsResponse(count=len(exchanges), exchanges=exchanges)
 
 
 __all__ = ["router", "_orchestrator", "_settings", "ApiError"]
