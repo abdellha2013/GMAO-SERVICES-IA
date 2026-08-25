@@ -68,7 +68,9 @@ async def simulate(
         payload.failure_rate,
         len(equipement_ids),
     )
-    return await request.app.state.orchestrator.process(readings)
+    result = await request.app.state.orchestrator.process(readings)
+    result.readings = readings_raw
+    return result
 
 
 __all__ = ["router", "ApiError"]

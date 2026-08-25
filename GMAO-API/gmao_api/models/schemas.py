@@ -68,6 +68,7 @@ class PredictionOutcome(BaseModel):
 
 class PredictionsResponse(BaseModel):
     results: list[PredictionOutcome]
+    readings: list[dict] | None = None
     model_version: str | None
 
 
