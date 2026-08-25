@@ -3,59 +3,26 @@
 > **Base URL** : `http://127.0.0.1:8200`
 > **Version** : v1 (préfixe `/api/v1`)
 > **Format** : JSON (`Content-Type: application/json`)
-> **Authentification** : Bearer token via header `Authorization` (désactivée en dev si `GMAO_API_KEY` est vide)
+> **Authentification** : Aucune — tous les services communiquent librement
 
 ---
 
 ## Table des matières
 
-1. [Authentification](#1-authentification)
-2. [GET /api/v1/healthz](#2-get-apiv1healthz--santé-du-service)
-3. [POST /api/v1/predictions](#3-post-apiv1predictions--prédiction-depuis-des-relevés-réels)
-4. [POST /api/v1/simulate](#4-post-apiv1simulate--génération--prédiction-en-un-seul-appel)
-5. [Schéma SensorReading](#5-schéma-des-données--sensorreading)
-6. [Catalogue des équipements](#6-catalogue-des-équipements)
-7. [Interpréter les résultats](#7-interpréter-les-résultats)
-8. [Exemples d'intégration Laravel](#8-exemples-dintégration-laravel)
-9. [Codes d'erreur](#9-codes-derreur)
+1. [GET /api/v1/healthz](#1-get-apiv1healthz--santé-du-service)
+2. [POST /api/v1/predictions](#2-post-apiv1predictions--prédiction-depuis-des-relevés-réels)
+3. [POST /api/v1/simulate](#3-post-apiv1simulate--génération--prédiction-en-un-seul-appel)
+4. [Schéma SensorReading](#4-schéma-des-données--sensorreading)
+5. [Catalogue des équipements](#5-catalogue-des-équipements)
+6. [Interpréter les résultats](#6-interpréter-les-résultats)
+7. [Exemples d'intégration Laravel](#7-exemples-dintégration-laravel)
+8. [Codes d'erreur](#8-codes-derreur)
 
 ---
 
-## 1. Authentification
+## 1. GET /api/v1/healthz — Santé du service
 
-### En développement
-
-Si `GMAO_API_KEY` est vide dans le `.env` de GMAO-API, **aucune authentification n'est requise**. Les endpoints protégés acceptent toute requête sans header.
-
-### En production
-
-Définir `GMAO_API_KEY=une_cle_secrete` dans le `.env` de GMAO-API, puis envoyer le header :
-
-```
-Authorization: Bearer une_cle_secrete
-```
-
-| Endpoint | Auth requise |
-|---|---|
-| `GET /api/v1/healthz` | Non |
-| `POST /api/v1/predictions` | Oui |
-| `POST /api/v1/simulate` | Oui |
-
-Si la clé est absente ou incorrecte :
-
-```json
-HTTP 401
-{
-  "message": "Clé API invalide ou absente.",
-  "error_code": "AUTH_INVALID_KEY"
-}
-```
-
----
-
-## 2. GET /api/v1/healthz — Santé du service
-
-Vérifie que GMAO-API et GMAO-ML sont joignables.
+Vérifie que GMAO-API et GMAO-ML sont joignables. **Aucune auth requise.**
 
 ### Requête
 
@@ -87,16 +54,15 @@ curl http://127.0.0.1:8200/api/v1/healthz
 $response = Http::get('http://127.0.0.1:8200/api/v1/healthz');
 
 if ($response->json('ml_api_reachable') === false) {
-    // GMAO-ML est down, ne pas envoyer de prédictions
-    Log::warning('GMAO-ML injoignable');
+    Log::warning('GMAO-ML indisponible');
 }
 ```
 
 ---
 
-## 3. POST /api/v1/predictions — Prédiction depuis des relevés réels
+## 2. POST /api/v1/predictions — Prédiction depuis des relevés réels
 
-Envoie des relevés capteurs et reçoit les prédictions du modèle ML.
+Envoie des relevés capteurs et reçoit les prédictions du modèle ML. **Aucune auth requise.**
 
 ### Requête
 
@@ -124,7 +90,7 @@ curl -X POST http://127.0.0.1:8200/api/v1/predictions \
 |---|---|---|---|---|
 | `readings` | array | Oui | 1-100 éléments | Liste des relevés capteurs |
 
-Chaque élément suit le schéma [SensorReading](#5-schéma-des-données--sensorreading).
+Chaque élément suit le schéma [SensorReading](#4-schéma-des-données--sensorreading).
 
 ### Réponse `200 OK`
 
@@ -224,9 +190,9 @@ curl -X POST http://127.0.0.1:8200/api/v1/predictions \
 
 ---
 
-## 4. POST /api/v1/simulate — Génération + prédiction en un seul appel
+## 3. POST /api/v1/simulate — Génération + prédiction en un seul appel
 
-Génère des relevés capteurs aléatoires **et** les envoie au modèle ML. La réponse contient les relevés générés **et** les prédictions.
+Génère des relevés capteurs aléatoires **et** les envoie au modèle ML. La réponse contient les relevés générés **et** les prédictions. **Aucune auth requise.**
 
 ### Requête
 
@@ -348,7 +314,7 @@ curl -X POST http://127.0.0.1:8200/api/v1/simulate \
 
 ---
 
-## 5. Schéma des données — SensorReading
+## 4. Schéma des données — SensorReading
 
 Chaque relevé capteur suit ce schéma. Les champs utilisent des alias (noms exacts avec espaces et unités) pour coller au dataset AI4I d'origine.
 
@@ -396,7 +362,7 @@ Chaque relevé capteur suit ce schéma. Les champs utilisent des alias (noms exa
 
 ---
 
-## 6. Catalogue des équipements
+## 5. Catalogue des équipements
 
 12 équipements dans MySQL (`gmao_rag` / table `equipements`) :
 
@@ -423,11 +389,9 @@ Chaque relevé capteur suit ce schéma. Les champs utilisent des alias (noms exa
 | `elevee` | Intervention dans les 24h |
 | `moyenne` | Intervention planifiable |
 
-> **Note** : GMAO-API résout le nom depuis MySQL. Si MySQL est indisponible, le catalogue Python (fallback) est utilisé.
-
 ---
 
-## 7. Interpréter les résultats
+## 6. Interpréter les résultats
 
 ### Structure d'un résultat
 
@@ -468,13 +432,11 @@ Chaque relevé capteur suit ce schéma. Les champs utilisent des alias (noms exa
 | Modèle | HistGradientBoosting |
 | Coût FN/FP | 10x (FN=10, FP=1) |
 
-> Le modèle est biaisé vers la **précision** : quand il dit "panne", il a raison 98.3% du temps. Quelques pannes peuvent passer inaperçues (recall 85.3%).
-
 ---
 
-## 8. Exemples d'intégration Laravel
+## 7. Exemples d'intégration Laravel
 
-### 8.1 Vérifier la santé de GMAO-API
+### 7.1 Vérifier la santé de GMAO-API
 
 ```php
 use Illuminate\Support\Facades\Http;
@@ -482,25 +444,19 @@ use Illuminate\Support\Facades\Http;
 function checkGmaoHealth(): bool
 {
     $response = Http::timeout(5)->get('http://127.0.0.1:8200/api/v1/healthz');
-
-    if ($response->failed()) {
-        return false;
-    }
-
+    if ($response->failed()) return false;
     return $response->json('ml_api_reachable') === true;
 }
 ```
 
-### 8.2 Envoyer des relevés et obtenir des prédictions
+### 7.2 Envoyer des relevés et obtenir des prédictions
 
 ```php
 use Illuminate\Support\Facades\Http;
 
 function predictFailure(array $readings): array
 {
-    $response = Http::withHeaders([
-        'Content-Type' => 'application/json',
-    ])->timeout(15)->post('http://127.0.0.1:8200/api/v1/predictions', [
+    $response = Http::timeout(15)->post('http://127.0.0.1:8200/api/v1/predictions', [
         'readings' => $readings,
     ]);
 
@@ -528,7 +484,7 @@ $result = predictFailure([
 // $result['results'][0]['probability_failure'] === 0.9532
 ```
 
-### 8.3 Générer des données de test (simulate)
+### 7.3 Générer des données de test (simulate)
 
 ```php
 function simulateReadings(int $count = 10, float $failureRate = 0.3): array
@@ -547,7 +503,7 @@ function simulateReadings(int $count = 10, float $failureRate = 0.3): array
 // - 'readings'  => relevés générés (réutilisables pour /predictions)
 ```
 
-### 8.4 Boucle de surveillance continue
+### 7.4 Boucle de surveillance continue
 
 ```php
 use Illuminate\Support\Facades\Http;
@@ -556,14 +512,12 @@ use Illuminate\Support\Facades\Log;
 function surveillanceLoop(): void
 {
     while (true) {
-        // 1. Vérifier santé
         if (!checkGmaoHealth()) {
             Log::warning('GMAO-ML indisponible, attente 30s');
             sleep(30);
             continue;
         }
 
-        // 2. Générer un relevé (1 machine, panne rare ~5%)
         $failureRate = (mt_rand(0, 100) < 5) ? 1.0 : 0.0;
         $response = Http::post('http://127.0.0.1:8200/api/v1/simulate', [
             'count' => 1,
@@ -573,27 +527,21 @@ function surveillanceLoop(): void
         $data = $response->json();
         $result = $data['results'][0];
 
-        // 3. Si panne prédite, créer une intervention
         if ($result['prediction'] === 1) {
             Log::alert('PANNE prédite', [
                 'equipement' => $result['equipement_nom'],
                 'probabilite' => $result['probability_failure'],
             ]);
-
-            // Créer demande d'intervention dans Laravel DB
-            // InterventionRequest::create([...]);
         }
 
-        // 4. Attendre 6-14 secondes (intervalle aléatoire)
         sleep(mt_rand(6, 14));
     }
 }
 ```
 
-### 8.5 Envoyer les readings générés en retour
+### 7.5 Réutiliser les readings générés
 
 ```php
-// Après un /simulate, réutiliser les readings pour un test ciblé
 $simResponse = Http::post('http://127.0.0.1:8200/api/v1/simulate', [
     'count' => 3,
     'failure_rate' => 0.5,
@@ -601,7 +549,6 @@ $simResponse = Http::post('http://127.0.0.1:8200/api/v1/simulate', [
 
 $generatedReadings = $simResponse->json('readings');
 
-// Renvoyer les mêmes readings pour retester
 $predResponse = Http::post('http://127.0.0.1:8200/api/v1/predictions', [
     'readings' => $generatedReadings,
 ]);
@@ -609,11 +556,10 @@ $predResponse = Http::post('http://127.0.0.1:8200/api/v1/predictions', [
 
 ---
 
-## 9. Codes d'erreur
+## 8. Codes d'erreur
 
 | Code HTTP | `error_code` | Description |
 |---|---|---|
-| 401 | `AUTH_INVALID_KEY` | Clé API absente ou incorrecte |
 | 422 | `VALIDATION_ERROR` | Payload invalide (champs manquants, valeurs hors limites) |
 | 503 | `ML_UNREACHABLE` | GMAO-ML injoignable ou timeout |
 | 500 | `API_INTERNAL_ERROR` | Erreur interne inattendue |
@@ -622,7 +568,7 @@ $predResponse = Http::post('http://127.0.0.1:8200/api/v1/predictions', [
 
 ```json
 {
-  "message": "Description de l'erreur en français",
+  "message": "Description de l'erreur",
   "error_code": "CODE_ERREUR",
   "details": {}
 }
@@ -643,10 +589,8 @@ $predResponse = Http::post('http://127.0.0.1:8200/api/v1/predictions', [
 
 | Variable | Défaut | Description |
 |---|---|---|
-| `GMAO_API_KEY` | (vide) | Clé API pour authentification (vide = pas d'auth) |
 | `API_PORT` | 8200 | Port de l'API |
 | `ML_API_URL` | http://127.0.0.1:8100 | URL du service GMAO-ML |
-| `ML_API_KEY` | (vide) | Clé API vers GMAO-ML (vide = pas d'auth) |
 | `ML_TIMEOUT_S` | 10 | Timeout vers GMAO-ML (secondes) |
 | `ML_RETRIES` | 2 | Nombre de tentatives vers GMAO-ML |
 | `EQUIPEMENTS_DB_URL` | (vide) | URL MySQL (vide = catalogue Python fallback) |
