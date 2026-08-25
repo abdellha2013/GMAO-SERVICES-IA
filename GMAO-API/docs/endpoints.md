@@ -30,7 +30,7 @@ Clé invalide → `401` · en-tête absent → `422`.
 |---|---|---|---|
 | GET | `/api/v1/healthz` | non | état du service + joignabilité GMAO-ML + mode Laravel |
 | POST | `/api/v1/predictions` | oui | relevés capteurs réels → ML → alertes si panne |
-| POST | `/api/v1/simulate` | oui | relevés artificiels → même chaîne complète |
+| POST | `/api/v1/simulate` | oui | relevés artificiels → même chaîne (IDs depuis MySQL si configuré) |
 | GET | `/api/v1/alerts` | oui | journal des demandes d'intervention émises |
 | GET | `/api/v1/laravel/interventions` | oui | proxy lecture : demandes présentes côté Laravel/mock |
 | GET | `/` | non | dashboard web de test (page HTML) |
@@ -114,6 +114,8 @@ curl -X POST http://127.0.0.1:8200/api/v1/predictions \
 ## 3. `POST /api/v1/simulate`
 
 Génère des relevés artificiels puis exécute la même chaîne.
+L'`equipement_id` de chaque relevé est tiré dans la **table `equipements`**
+si `EQUIPEMENTS_DB_URL` est configuré, sinon dans le catalogue Python de dev.
 
 ```bash
 curl -X POST http://127.0.0.1:8200/api/v1/simulate \

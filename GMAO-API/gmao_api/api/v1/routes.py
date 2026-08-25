@@ -65,16 +65,19 @@ async def simulate(
 ) -> PredictionsResponse:
     """Génère des relevés artificiels puis exécute la chaîne complète identique."""
 
+    equipement_ids = await request.app.state.equipment_service.equipment_ids()
     readings_raw = generate_batch(
         count=payload.count,
         failure_rate=payload.failure_rate,
         random_state=payload.random_state,
+        equipement_ids=equipement_ids,
     )
     readings = [request.app.state.reading_model.model_validate(r) for r in readings_raw]
     logger.info(
-        "POST /simulate — %d relevés générés (failure_rate=%.2f)",
+        "POST /simulate — %d relevés générés (failure_rate=%.2f, %d équipements dispo)",
         len(readings),
         payload.failure_rate,
+        len(equipement_ids),
     )
     return await request.app.state.orchestrator.process(readings)
 

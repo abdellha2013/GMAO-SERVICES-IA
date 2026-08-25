@@ -11,9 +11,12 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+
 import gmao_api
 from gmao_api.config import Settings, load_settings
 from gmao_api.exceptions import ApiError
+from gmao_api.services.equipment_service import EquipmentService
 from gmao_api.services.journal import AlertJournal
 from gmao_api.services.laravel_client import LaravelClient
 from gmao_api.services.ml_client import MlClient
@@ -38,6 +41,19 @@ def create_app(
         app.state.settings = resolved_settings
         app.state.version = gmao_api.__version__
         app.state.reading_model = _reading_model_cls()
+
+        # ── Connexion MySQL (table equipements) ──────────────────
+        db_engine: AsyncEngine | None = None
+        if resolved_settings.equipements_db_url:
+            db_engine = create_async_engine(
+                resolved_settings.equipements_db_url,
+                pool_pre_ping=True,
+                pool_recycle=300,
+            )
+            logger.info("Connexion MySQL configurée : %s", resolved_settings.equipements_db_url.split("@")[-1])
+
+        app.state.equipment_service = EquipmentService(engine=db_engine)
+
         app.state.ml_client = MlClient(resolved_settings, transport=ml_transport)
         app.state.laravel_client = LaravelClient(resolved_settings, transport=laravel_transport)
         app.state.journal = AlertJournal()
@@ -46,13 +62,16 @@ def create_app(
             ml_client=app.state.ml_client,
             laravel_client=app.state.laravel_client,
             journal=app.state.journal,
+            equipment_service=app.state.equipment_service,
         )
         logger.info(
-            "GMAO-API prête — ML=%s | Laravel mode=%s",
+            "GMAO-API prête — ML=%s | Laravel mode=%s | equipements=%s",
             resolved_settings.ml_api_url,
             "simulated" if resolved_settings.simulate_laravel else "real",
+            "MySQL" if db_engine else "catalogue Python",
         )
         yield
+        await app.state.equipment_service.close()
         await app.state.ml_client.aclose()
         await app.state.laravel_client.aclose()
 

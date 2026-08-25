@@ -27,6 +27,7 @@ from gmao_ml.exceptions import (
     ModelNotReadyError,
     ModelSerializationError,
     PredictionError,
+    MLError,
 )
 
 __all__ = ["Predictor"]

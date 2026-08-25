@@ -55,6 +55,14 @@ Second clic = pause. Aucune saisie requise (clé API dans l'en-tête).
 
 ## Contraintes métier
 
+* **Lecture équipements** : GMAO-API accède **directement à MySQL** (table
+  `equipements`) pour associer chaque relevé à une machine réelle. Si la base
+  n'est pas configurée, un catalogue Python de 12 équipements de dev sert de
+  fallback automatique.
+* **Écriture demandes d'intervention** : les alertes passent **toujours par
+  l'API Laravel** (`POST /api/intervention-requests`), jamais par accès direct
+  à la base.
+
 * chaque relevé porte un `equipement_id` existant dans la table `equipements`
   (catalogue local des 12 équipements de test copié depuis le SQL de référence) ;
 * les alertes respectent la structure de la table `demande_interventions`

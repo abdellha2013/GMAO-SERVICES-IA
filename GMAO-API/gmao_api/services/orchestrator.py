@@ -12,7 +12,7 @@ from gmao_api.models.schemas import (
     PredictionsResponse,
     SensorReading,
 )
-from gmao_api.services import equipment_catalog
+from gmao_api.services.equipment_service import EquipmentService
 from gmao_api.services.journal import AlertJournal
 from gmao_api.services.laravel_client import LaravelClient, build_demande_intervention
 from gmao_api.services.ml_client import MlClient, positive_probability
@@ -38,11 +38,13 @@ class PredictionOrchestrator:
         ml_client: MlClient,
         laravel_client: LaravelClient,
         journal: AlertJournal,
+        equipment_service: EquipmentService,
     ) -> None:
         self._settings = settings
         self._ml = ml_client
         self._laravel = laravel_client
         self._journal = journal
+        self._equipment = equipment_service
 
     async def process(self, readings: list[SensorReading]) -> PredictionsResponse:
         results: list[PredictionOutcome] = []
@@ -63,8 +65,7 @@ class PredictionOrchestrator:
         )
 
     async def _process_one(self, reading: SensorReading) -> PredictionOutcome:
-        equipement = equipment_catalog.get_equipement(reading.equipement_id)
-        equipement_nom = equipment_catalog.describe(reading.equipement_id)
+        equipement_nom = await self._equipment.describe(reading.equipement_id)
 
         ml_result = await self._ml.predict(reading.to_ml_features())
         probability = positive_probability(ml_result["probabilities"])

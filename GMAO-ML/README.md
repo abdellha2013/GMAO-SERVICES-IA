@@ -17,14 +17,11 @@ cp GMAO-ML/.env.example GMAO-ML/.env   # puis ajuster ML_API_KEY
 
 ## Données d'entraînement
 
-Deux sources possibles (CSV avec colonne cible) :
+la source possible (CSV avec colonne cible) :
 
 ```bash
 # 1) Dataset public AI4I 2020 (10 000 obs., capteurs + labels défaillance)
 uv run python GMAO-ML/scripts/load_ai4i_dataset.py
-
-# 2) Fallback synthétique (smoke test du pipeline)
-uv run python GMAO-ML/scripts/generate_sample_csv.py
 ```
 
 ## Entraînement

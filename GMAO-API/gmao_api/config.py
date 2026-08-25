@@ -41,6 +41,9 @@ class Settings:
     laravel_api_token: str | None = None
     laravel_ia_user_id: int = 1
 
+    # ── Base de données (lecture table equipements) ──────────────
+    equipements_db_url: str | None = None
+
     # ── Règle d'alerte ────────────────────────────
     critical_probability: float = 0.90
 
@@ -60,6 +63,7 @@ def load_settings() -> Settings:
         laravel_alerts_path=os.getenv("LARAVEL_ALERTS_PATH", "/api/intervention-requests"),
         laravel_api_token=os.getenv("LARAVEL_API_TOKEN") or None,
         laravel_ia_user_id=int(os.getenv("LARAVEL_IA_USER_ID", "1")),
+        equipements_db_url=os.getenv("EQUIPEMENTS_DB_URL") or None,
         critical_probability=float(os.getenv("CRITICAL_PROBABILITY", "0.90")),
     )
 
