@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GMAO-OCR · Visualisation du pipeline QR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">▦</span>
+        <div>
+          <h1>GMAO-OCR</h1>
+          <p class="subtitle">Visualiseur du pipeline de lecture de QR codes</p>
+        </div>
+      </div>
+      <div class="health" id="health">
+        <span class="pill pill-waiting">Service …</span>
+        <span class="pill" id="pill-decoder">Décodeur : –</span>
+        <span class="pill" id="pill-laravel">Laravel : –</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- ── Colonne 1 : sélection & aperçu original ────────────── -->
+      <section class="card" id="source-card">
+        <h2><span class="step">1</span> Fichier source</h2>
+        <div id="dropzone" class="dropzone" tabindex="0">
+          <input type="file" id="file-input" accept=".svg,.png,.eps,.jpg,.jpeg,image/svg+xml,image/png,application/postscript" hidden />
+          <div class="dz-inner" id="dz-inner">
+            <span class="dz-icon">⇪</span>
+            <p><strong>Glissez-déposez</strong> une image <em>SVG · PNG · EPS · JPEG</em><br />ou <button type="button" id="btn-browse" class="link">parcourez</button></p>
+            <small>Max 10 Mo — formats : SVG, PNG, EPS, JPEG</small>
+          </div>
+        </div>
+        <button type="button" id="btn-sample" class="btn btn-ghost btn-block">
+           Charger le QR SVG d'exemple du dépôt
+        </button>
+
+        <div class="meta" id="source-meta" hidden>
+          <ul>
+            <li><span>Fichier</span><strong id="meta-name">–</strong></li>
+            <li><span>Type MIME</span><strong id="meta-type">–</strong></li>
+            <li><span>Taille</span><strong id="meta-size">–</strong></li>
+            <li><span>Résolution</span><strong id="meta-dims">–</strong></li>
+          </ul>
+          <div class="preview"><img id="preview-original" alt="Aperçu du fichier original" /></div>
+        </div>
+      </section>
+
+      <!-- ── Colonne 2 : actions ────────────────────────────────── -->
+      <section class="card controls">
+        <h2><span class="step">2</span> Pipeline</h2>
+
+        <button type="button" id="btn-raster" class="btn btn-primary btn-block" disabled>
+          <span class="btn-icon">⇲</span> Rasteriser (SVG/EPS → PNG)
+        </button>
+        <button type="button" id="btn-scan" class="btn btn-success btn-block" disabled>
+          <span class="btn-icon">⌕</span> Scanner le QR code
+        </button>
+
+        <div class="status-line" id="status-line"></div>
+      </section>
+
+      <!-- ── Colonne 3 : résultat ───────────────────────────────── -->
+      <section class="card" id="result-card">
+        <h2><span class="step">3</span> Résultat</h2>
+
+        <div class="results-grid">
+          <div class="result-block">
+            <h3><span class="dot dot-purple"></span> Aperçu rasterisé</h3>
+            <div class="preview preview-small" id="raster-preview">
+              <span class="placeholder">Lancez une rasterisation&hellip;</span>
+            </div>
+            <p class="raster-meta" id="raster-meta"></p>
+            <table class="mini" id="raster-table" hidden>
+              <tbody>
+                <tr><td>Format source</td><td id="r-source">–</td></tr>
+                <tr><td>Résolution PNG</td><td id="r-dims">–</td></tr>
+                <tr><td>Décodeurs</td><td id="r-decoders">–</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="result-block">
+            <h3><span class="dot dot-cyan"></span> Décodage</h3>
+            <div class="decode-box" id="decode-box">
+              <span class="placeholder">Aucun essai de décodage&hellip;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="result-block">
+          <h3><span class="dot dot-green"></span> Réponse du scan <code>/api/v1/qr/scan</code></h3>
+          <div class="scan-box" id="scan-box">
+            <span class="placeholder">Aucun scan effectué&hellip;</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>GMAO-OCR · v<span id="version">–</span></span>
+      <code id="endpoint">/api/v1/qr/scan</code>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

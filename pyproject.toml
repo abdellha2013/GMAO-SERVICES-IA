@@ -1,23 +1,25 @@
 [project]
 name = "gmao-services-ia"
 version = "0.1.0"
-description = "Workspace GMAO — services IA (RAG, ML prédictif, OCR, dashboard)"
+description = "Workspace GMAO — services IA (RAG, ML prédictif, OCR, analytics, dashboard)"
 requires-python = ">=3.13"
 dependencies = [
     "gmao-rag",
     "gmao-ml",
     "gmao-api",
     "gmao-analytics",
+    "gmao-ocr",
 ]
 
 [tool.uv]
 package = false
 
 [tool.uv.workspace]
-members = ["GMAO-RAG", "GMAO-ML", "GMAO-API", "GMAO-ANALYTICS"]
+members = ["GMAO-RAG", "GMAO-ML", "GMAO-API", "GMAO-ANALYTICS", "GMAO-OCR"]
 
 [tool.uv.sources]
 gmao-rag = { workspace = true }
 gmao-ml = { workspace = true }
 gmao-api = { workspace = true }
 gmao-analytics = { workspace = true }
+gmao-ocr = { workspace = true }
