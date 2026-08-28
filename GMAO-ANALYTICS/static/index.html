@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GMAO-ANALYTICS — Visualisation des métriques</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-2: #273449;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #14b8a6;
+      --accent-2: #38bdf8;
+      --good: #34d399;
+      --warn: #fbbf24;
+      --bad: #f87171;
+      --border: #334155;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(160deg, #0f172a 0%, #122133 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    header h1 { font-size: 1.5rem; font-weight: 700; }
+    header h1 span { color: var(--accent); }
+    .sub { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+    .badge {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .toolbar { display: flex; gap: 8px; }
+    button {
+      background: var(--accent);
+      border: none;
+      color: #062015;
+      font-weight: 600;
+      padding: 9px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: filter .15s;
+    }
+    button:hover { filter: brightness(1.1); }
+    button.ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+
+    /* Cartes KPI */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 3px;
+      background: var(--accent);
+    }
+    .kpi h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .kpi .value { font-size: 1.9rem; font-weight: 800; margin-top: 6px; }
+    .kpi .unit { font-size: 0.8rem; color: var(--muted); font-weight: 400; }
+    .kpi .hint { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+    /* Deux colonnes : tableau + barres */
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    .panel h2 { font-size: 1rem; margin-bottom: 14px; color: var(--accent-2); }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: .04em; }
+    tbody tr:hover { background: var(--panel-2); }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pill { font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; }
+    .criticite-elevee, .criticite-critique { background: #7f1d1d; color: #fca5a5; }
+    .criticite-moyenne { background: #78350f; color: #fcd34d; }
+    .criticite-faible { background: #14532d; color: #86efac; }
+
+    /* Barres de disponibilité */
+    .bar-row { margin-bottom: 14px; }
+    .bar-head { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px; }
+    .bar-head .name { color: var(--text); }
+    .bar-head .val { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .bar { height: 10px; background: var(--panel-2); border-radius: 999px; overflow: hidden; }
+    .bar > span { display: block; height: 100%; border-radius: 999px; }
+    .bar.good > span { background: var(--good); }
+    .bar.ok > span { background: var(--warn); }
+    .bar.bad > span { background: var(--bad); }
+
+    /* Chargement / erreur */
+    .state { padding: 40px; text-align: center; color: var(--muted); }
+    .spinner {
+      width: 34px; height: 34px; margin: 0 auto 12px;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error {
+      background: #450a0a; border: 1px solid var(--bad); color: #fecaca;
+      padding: 14px; border-radius: 8px; font-size: 0.85rem;
+    }
+    .muted-text { color: var(--muted); }
+    footer { margin-top: 28px; text-align: center; color: var(--muted); font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>GMAO <span>Analytics</span></h1>
+        <div class="sub">Visualisation des indicateurs de maintenance MTBF / MTTR / disponibilité</div>
+      </div>
+      <div class="toolbar">
+        <button onclick="loadAll()">↻ Actualiser</button>
+        <button class="ghost" onclick="exportReport('markdown')">Rapport MD</button>
+        <button class="ghost" onclick="exportReport('csv')">Rapport CSV</button>
+      </div>
+    </header>
+
+    <div id="meta" class="badge" style="display:none"></div>
+
+    <!-- Cartes KPI -->
+    <section class="kpis" id="kpis"></section>
+
+    <!-- Tableau + Barres -->
+    <section class="cols">
+      <div class="panel">
+        <h2>Détail par équipement</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Équipement</th>
+                <th>Criticité</th>
+                <th class="num">MTBF (h)</th>
+                <th class="num">MTTR (h)</th>
+                <th class="num">Dispo (%)</th>
+                <th class="num">Pannes</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Disponibilité par équipement</h2>
+        <div id="bars"></div>
+      </div>
+    </section>
+
+    <footer>GMAO-SERVICES-IA · Module 19 — GMAO-ANALYTICS</footer>
+  </div>
+
+  <div id="overlay" style="display:none" class="state">
+    <div class="spinner"></div>
+    <div>Chargement des métriques…</div>
+  </div>
+
+  <script>
+    const API = "/api/v1";
+
+    async function fetchJson(url) {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw new Error(`HTTP ${res.status} ${body}`);
+      }
+      return res.json();
+    }
+
+    function fmt(v, digits = 1, dash = "—") {
+      if (v === null || v === undefined) return dash;
+      return Number(v).toFixed(digits);
+    }
+
+    function criticiteClass(c) {
+      return c ? `criticite-${c.toLowerCase()}` : "";
+    }
+
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    function kpiColorClass(availability) {
+      if (availability === null || availability === undefined) return "";
+      if (availability >= 98) return "good";
+      if (availability >= 95) return "ok";
+      return "bad";
+    }
+
+    function renderKpis(metrics) {
+      const g = metrics.global;
+      const mount = document.getElementById("kpis");
+      const cards = [
+        { label: "MTBF (parc)", value: g.mtbf_hours, unit: "heures", hint: "Temps moyen entre pannes" },
+        { label: "MTTR (parc)", value: g.mttr_hours, unit: "heures", hint: "Temps moyen de réparation" },
+        { label: "Disponibilité", value: g.availability_pct, unit: "%", hint: "MTBF / (MTBF + MTTR)", cls: kpiColorClass(g.availability_pct) },
+        { label: "Pannes recensées", value: g.nb_pannes, unit: "", hint: "Historique" },
+        { label: "Interventions terminées", value: g.nb_interventions, unit: "", hint: "Ordres de travail" },
+      ];
+      mount.innerHTML = cards.map(c => `
+        <div class="kpi">
+          <h3>${c.label}</h3>
+          <div class="value" style="color:${c.cls === "good" ? "var(--good)" : c.cls === "bad" ? "var(--bad)" : c.cls === "ok" ? "var(--warn)" : "var(--text)"}">
+            ${c.value === null || c.value === undefined ? "—" : Number(c.value).toLocaleString("fr-FR", { maximumFractionDigits: 1 })}
+            ${c.unit ? `<span class="unit">${c.unit}</span>` : ""}
+          </div>
+          <div class="hint">${c.hint}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderTable(metrics) {
+      const rows = metrics.per_equipement.map(e => `
+        <tr>
+          <td>${esc(e.nom_equipement)}<div class="muted-text" style="font-size:0.7rem">${esc(e.localisation) || ""}</div></td>
+          <td><span class="pill ${criticiteClass(e.criticite)}">${esc(e.criticite) || "—"}</span></td>
+          <td class="num">${fmt(e.mtbf_hours)}</td>
+          <td class="num">${fmt(e.mttr_hours)}</td>
+          <td class="num">${fmt(e.availability_pct)}</td>
+          <td class="num">${e.nb_pannes ?? 0}</td>
+        </tr>
+      `).join("");
+      document.getElementById("tbody").innerHTML = rows;
+    }
+
+    function renderBars(metrics) {
+      const allAvail = metrics.per_equipement.map(e => e.availability_pct ?? 0);
+      const max = Math.max(100, ...allAvail);
+      const mount = document.getElementById("bars");
+      mount.innerHTML = metrics.per_equipement.map(e => {
+        const avail = e.availability_pct;
+        const pct = avail === null || avail === undefined ? 0 : Math.round((avail / max) * 100);
+        const cls = kpiColorClass(avail);
+        return `
+          <div class="bar-row">
+            <div class="bar-head">
+              <span class="name">${esc(e.nom_equipement)}</span>
+              <span class="val">${fmt(avail, 1)} %</span>
+            </div>
+            <div class="bar ${cls}"><span style="width:${pct}%"></span></div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function showMeta(metrics) {
+      const el = document.getElementById("meta");
+      el.style.display = "inline-block";
+      el.textContent = `Généré le : ${metrics.generated_at || "—"}`;
+    }
+
+    async function loadAll() {
+      const overlay = document.getElementById("overlay");
+      overlay.style.display = "block";
+      try {
+        const metrics = await fetchJson(`${API}/metrics`);
+        renderKpis(metrics);
+        renderTable(metrics);
+        renderBars(metrics);
+        showMeta(metrics);
+      } catch (err) {
+        document.getElementById("kpis").innerHTML =
+          `<div class="error">Impossible de charger les métriques : ${esc(err.message)}</div>`;
+      } finally {
+        overlay.style.display = "none";
+      }
+    }
+
+    function exportReport(format) {
+      window.open(`${API}/report?format=${format}`, "_blank");
+    }
+
+    loadAll();
+  </script>
+</body>
+</html>

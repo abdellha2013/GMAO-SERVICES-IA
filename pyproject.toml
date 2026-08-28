@@ -7,15 +7,17 @@ dependencies = [
     "gmao-rag",
     "gmao-ml",
     "gmao-api",
+    "gmao-analytics",
 ]
 
 [tool.uv]
 package = false
 
 [tool.uv.workspace]
-members = ["GMAO-RAG", "GMAO-ML", "GMAO-API"]
+members = ["GMAO-RAG", "GMAO-ML", "GMAO-API", "GMAO-ANALYTICS"]
 
 [tool.uv.sources]
 gmao-rag = { workspace = true }
 gmao-ml = { workspace = true }
 gmao-api = { workspace = true }
+gmao-analytics = { workspace = true }

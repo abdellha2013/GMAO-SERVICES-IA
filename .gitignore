@@ -28,6 +28,31 @@ build/
 .env.local
 .env.*.local
 *.env.bak
+.env.production
+.env.staging
+.env.test
+
+# ── Secrets étendus (clés, certificats, tokens) ────────────────
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.cer
+*.crt
+*.p8
+*.ppk
+*.asc
+secrets/
+serverless.yml
+*.npmrc
+*.pypirc
+config/database.yml
+id_rsa
+id_rsa.pub
+.credentials*
+*.credentials
 
 # ── IDE / éditeurs ─────────────────────────────────────────────
 .vscode/
@@ -81,6 +106,42 @@ GMAO-API/static/
 
 # ── Notebooks ──────────────────────────────────────────────────
 .ipynb_checkpoints/
+
+# ── Données / artefacts de sortie (tous sous-projets) ──────────
+# NB : GMAO-ML/artifacts/*.joblib est volontairement tracké (modèle courant versionné).
+*.h5
+*.hdf5
+*.tf
+*.onnx
+*.pt
+*.ckpt
+*.npz
+*.npy
+*.parquet
+*.feather
+*.sqlite3
+*.db
+*.dump
+*.bkp
+*.7z
+*.zip
+*.tar.gz
+*.tgz
+
+# ── Rapports / exports générés à la volée ─────────────────────
+*rapport_maintenance*.md
+*rapport_maintenance*.csv
+*rapport_maintenance*.html
+*.generated.*
+/output/
+/reports/
+
+# ═══════════════════════════════════════════════════════════════════
+# GMAO-ANALYTICS — analytique maintenance (MTBF/MTTR/dispo, port 8300)
+# ═══════════════════════════════════════════════════════════════════
+GMAO-ANALYTICS/artifacts/
+GMAO-ANALYTICS/output/
+GMAO-ANALYTICS/*.generated.*
 
 # ═══════════════════════════════════════════════════════════════════
 # GMAO-RAG — données volumineuses, Docker et tests hors repo
