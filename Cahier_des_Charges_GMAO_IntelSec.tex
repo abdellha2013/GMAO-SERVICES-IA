@@ -1,0 +1,262 @@
+\documentclass[11pt,a4paper]{article}
+
+% ===================== PACKAGES =====================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{colortbl}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage{lastpage}
+\usepackage{array}
+
+% ===================== COULEURS =====================
+\definecolor{primaryblue}{RGB}{16,42,67}
+\definecolor{accentteal}{RGB}{0,121,140}
+\definecolor{lightgray}{RGB}{245,246,248}
+\definecolor{midgray}{RGB}{90,98,107}
+\definecolor{warnred}{RGB}{176,42,42}
+
+% ===================== TITRES =====================
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{primaryblue}}
+  {\thesection}{0.6em}{}[{\color{accentteal}\titlerule[1pt]}]
+\titlespacing*{\section}{0pt}{1.4em}{0.9em}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{accentteal}}
+  {\thesubsection}{0.5em}{}
+\titlespacing*{\subsection}{0pt}{1.1em}{0.6em}
+
+% ===================== EN-TETE / PIED DE PAGE =====================
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.6pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyhead[L]{\small\textcolor{midgray}{GM-Soft — Cahier des Charges GMAO Intel-Sec}}
+\fancyhead[R]{\small\textcolor{midgray}{Confidentiel}}
+\fancyfoot[C]{\small\textcolor{midgray}{Page \thepage\ / \pageref{LastPage}}}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=accentteal,
+  urlcolor=accentteal,
+  citecolor=accentteal,
+  pdftitle={Cahier des Charges - GMAO Intel-Sec},
+  pdfauthor={GM-Soft},
+}
+
+% ===================== ENVIRONNEMENTS PERSONNALISES =====================
+\newtcolorbox{infobox}[1][]{
+  enhanced, breakable, colback=lightgray, colframe=accentteal,
+  boxrule=0.6pt, arc=2pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  title=#1, fonttitle=\bfseries\color{white}, coltitle=white,
+  colbacktitle=accentteal
+}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% ===================== DOCUMENT =====================
+\begin{document}
+
+% ---------- PAGE DE GARDE ----------
+\begin{titlepage}
+\centering
+\vspace*{1.2cm}
+
+{\Large \textbf{GM-SOFT}} \\[0.2cm]
+{\color{accentteal}\rule{0.4\linewidth}{1pt}}\\[0.6cm]
+
+{\large PROJET DE STAGE — FIN D'ANNÉE}\\[1.5cm]
+
+{\Huge \textbf{\color{primaryblue} Cahier des Charges}}\\[0.4cm]
+{\Large \textbf{\color{accentteal} GMAO Intel-Sec}}\\[0.5cm]
+
+{\large Application de Gestion de Maintenance Assistée par Ordinateur\\
+Optimisée IA, Maintenance Prédictive \& Cybersécurité}\\[2cm]
+
+\begin{tcolorbox}[enhanced, colback=lightgray, colframe=primaryblue,
+  boxrule=0.8pt, arc=3pt, width=0.85\linewidth, left=14pt, right=14pt, top=10pt, bottom=10pt]
+\begin{tabularx}{\linewidth}{@{}L{4.2cm}X@{}}
+\textbf{Binôme 1} & Mohamed ZARMOUNI — Cybersécurité \& Web (Laravel 12) \\
+\textbf{Focus} & Infrastructure Web, RBAC, Audit Logs, QR Code sécurisé \\[0.3cm]
+\textbf{Binôme 2} & Abdellah DAIF — Génie Logiciel \& IA (FastAPI / NLP / Vision / Data) \\
+\textbf{Focus} & Assistant RAG (Pannes), OCR Plaques, Maintenance Prédictive IoT, Dashboard \& API \\
+\end{tabularx}
+\end{tcolorbox}
+
+\vspace{1.5cm}
+{\normalsize Cadre : Projet de fin d'année — Durée : 2 mois — Travail en équipe synchrone}
+
+\vfill
+{\small \textcolor{midgray}{GM-Soft — Document Confidentiel — Usage interne uniquement}}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ================================================================
+\section{Présentation Générale et Objectifs}
+
+Ce document adapte les besoins classiques d'une solution de Gestion de Maintenance Assistée par Ordinateur (GMAO) aux compétences pointues d'un binôme d'élèves ingénieurs. L'objectif est de développer une plateforme capable de suivre le cycle complet de maintenance d'une entreprise (équipements, pannes, ordres de travail) sur un \textbf{site unique}, tout en y introduisant deux piliers innovants :
+
+\begin{itemize}
+  \item \textbf{L'Intelligence Artificielle (Next-Gen)} : diagnostic intelligent assisté par RAG (Retrieval-Augmented Generation), saisie automatique par vision par ordinateur (OCR), et désormais \textbf{prédiction de l'état des équipements} à partir des données de capteurs IoT.
+  \item \textbf{La Sécurité Applicative (Enterprise-Ready)} : traçabilité inaltérable via un registre d'audit, contrôle d'accès basé sur les rôles (RBAC) et immunité contre les failles OWASP courantes (injections SQL, fuites de données).
+\end{itemize}
+
+% ================================================================
+\section{Architecture Logique Globale}
+
+La solution conserve une architecture découplée en microservices communiquant par API REST :
+
+\begin{itemize}
+  \item \textbf{Service Core Applicatif (Laravel 12 / PHP 8.4)} : gère l'authentification (JWT), l'orchestration des données métier (équipements, interventions), la base de données MySQL principale et l'interface Web d'administration du site unique.
+  \item \textbf{Service d'Intelligence Artificielle (FastAPI / Python)} : module autonome hébergeant le moteur d'OCR, l'assistant RAG connecté à un Vector Store pour le diagnostic des pannes, ainsi que le nouveau \textbf{moteur de prédiction de l'état des machines} basé sur les flux de capteurs.
+  \item \textbf{Source de données IoT (externe)} : API de capteurs déjà existante sur les équipements du site, exposant des mesures (température, vibrations, courant, heures de fonctionnement, etc.) consommées périodiquement par le Service IA.
+\end{itemize}
+
+% ================================================================
+\section{Répartition des Modules et Périmètre Fonctionnel}
+
+\subsection{Bloc Web, Sécurisation et Gestion Métier (M. ZARMOUNI)}
+
+\begin{itemize}
+  \item \textbf{Module 21 \& 22 — Sécurité \& Audit} : implémentation du contrôle d'accès basé sur les rôles (Admin, Responsable, Technicien, Demandeur). Création d'une table d'audit traçant de manière immuable toutes les actions d'insertion, de modification et de suppression.
+  \item \textbf{Module 2, 4 \& 5 — Workflow de Maintenance} : gestion des zones/ateliers et des équipements du site. Système de création d'une Demande d'Intervention (DI) évoluant automatiquement vers un Ordre de Travail (OT).
+  \item \textbf{Module 18 — QR Code Sécurisé} : génération de QR Codes uniques pour chaque équipement avec signature cryptographique intégrée afin d'empêcher la falsification ou l'accès non autorisé aux fiches machines sur le terrain.
+  \item \textbf{Module 13 — Gestion Documentaire} : mise en place d'un espace de stockage pour l'upload, le classement et la consultation des fichiers PDF et manuels constructeurs.
+\end{itemize}
+
+\subsection{Bloc Intelligence Artificielle, Analytics et API (A. DAIF)}
+
+\begin{itemize}
+  \item \textbf{Fonctionnalité IA 1 — Assistant Diagnostic RAG (Module 20 avancé)} : conception d'un système RAG ingérant les notices techniques PDF et l'historique des interventions passées pour proposer instantanément aux techniciens des solutions aux pannes via une interface de chat.
+  \item \textbf{Fonctionnalité IA 2 — OCR de Plaques Signalétiques (Module 2 avancé)} : développement d'un module de vision par ordinateur sous Python capable d'extraire les numéros de série, marques et modèles d'équipements à partir d'une photo soumise par un utilisateur.
+  \item \textbf{Fonctionnalité IA 3 — Maintenance Prédictive IoT (nouveau module)} : conception d'un modèle de prédiction de l'état de santé des équipements à partir des données remontées par l'API de capteurs existante sur les machines. Le modèle exploite les séries temporelles de mesures (température, vibration, courant, etc.) pour estimer une probabilité de panne ou classifier l'état de la machine (Normal / Alerte / Critique), et déclencher automatiquement une alerte ou une proposition de DI préventive.
+  \item \textbf{Module 7 \& 19 — Moteur de Planning \& Dashboard Analytique} : implémentation d'une logique d'allocation intelligente prenant en compte la spécialité des techniciens et leur charge. Création de graphiques statistiques avancés (calcul des indicateurs MTBF, MTTR, taux de disponibilité des machines) via NumPy / Pandas, enrichis des sorties du modèle prédictif.
+  \item \textbf{Points de terminaison d'API REST} : structuration et documentation complète (Swagger/OpenAPI) des routes destinées à l'interconnexion fluide avec le frontend, l'API de capteurs et les futurs clients mobiles Flutter.
+\end{itemize}
+
+% ================================================================
+\section{Module de Maintenance Prédictive IoT — Spécifications Détaillées}
+
+\subsection{Objectif}
+Anticiper les pannes des équipements du site en analysant en continu les données issues des capteurs déjà installés sur les machines, afin de basculer d'une maintenance corrective/préventive planifiée vers une \textbf{maintenance prédictive} basée sur l'état réel de l'équipement.
+
+\subsection{Fonctionnement attendu}
+\begin{itemize}
+  \item Connexion périodique (polling) ou webhook vers l'\textbf{API de capteurs existante} pour récupérer les mesures par équipement (ex. : température, vibration, courant, pression, heures de fonctionnement cumulées).
+  \item Stockage historisé de ces mesures afin de constituer un jeu de données d'entraînement et de suivi.
+  \item Entraînement / utilisation d'un modèle de prédiction (ex. : classification de l'état de la machine ou régression sur une durée de vie résiduelle estimée), avec réévaluation régulière des performances.
+  \item Génération automatique d'une alerte et, si pertinent, d'une proposition de Demande d'Intervention (DI) lorsque l'état prédit dépasse un seuil de criticité défini.
+  \item Exposition des résultats du modèle (état prédit, indice de confiance, historique) via une route API dédiée, consommée par le Dashboard Analytique.
+\end{itemize}
+
+\subsection{Contraintes}
+\begin{itemize}
+  \item L'API de capteurs est considérée comme \textbf{externe et déjà existante} : le binôme ne développe pas les capteurs ni leur firmware, uniquement l'intégration, le traitement et la modélisation des données reçues.
+  \item Le format d'échange (JSON attendu) et la fréquence de remontée des données doivent être documentés dans la documentation technique de l'API.
+  \item Le modèle doit être ré-entraînable facilement à partir des données historisées (pipeline reproductible).
+\end{itemize}
+
+% ================================================================
+\section{Planification et Déploiement des Tâches (Sur 8 Semaines)}
+
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{@{}L{3.1cm}L{6.1cm}L{6.1cm}@{}}
+\toprule
+\rowcolor{primaryblue}
+\textcolor{white}{\textbf{Phase}} & \textcolor{white}{\textbf{Sprint 1 (Mois 1) — Fondations \& Cœur IA}} & \textcolor{white}{\textbf{Sprint 2 (Mois 2) — Interconnexion \& Durcissement}} \\
+\midrule
+\endfirsthead
+\toprule
+\rowcolor{primaryblue}
+\textcolor{white}{\textbf{Phase}} & \textcolor{white}{\textbf{Sprint 1 (Mois 1) — Fondations \& Cœur IA}} & \textcolor{white}{\textbf{Sprint 2 (Mois 2) — Interconnexion \& Durcissement}} \\
+\midrule
+\endhead
+
+\rowcolor{lightgray}
+\textbf{M. ZARMOUNI} &
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+\begin{itemize}[leftmargin=1em, itemsep=2pt, topsep=0pt]
+  \item Modélisation et création de la base de données MySQL (en commun).
+  \item Initialisation de Laravel 12 et mise en place de la double authentification / JWT.
+  \item Implémentation du CRUD Zones/Équipements (site unique) et génération des QR codes.
+\end{itemize}\vspace{2pt}
+\end{minipage} &
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+\begin{itemize}[leftmargin=1em, itemsep=2pt, topsep=0pt]
+  \item Développement du workflow complet des ordres de travail (OT).
+  \item Développement du module de journalisation d'audit global.
+  \item Phase de Tests d'Intrusion (Pentesting) de l'ensemble de l'infrastructure web.
+\end{itemize}\vspace{2pt}
+\end{minipage} \\
+
+\textbf{A. DAIF} &
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+\begin{itemize}[leftmargin=1em, itemsep=2pt, topsep=0pt]
+  \item Modélisation et création de la base de données MySQL (en commun).
+  \item Initialisation de l'écosystème FastAPI Python.
+  \item Développement du modèle de vision (OCR) pour la lecture de plaques machines.
+  \item Conception de la base vectorielle pour l'assistant RAG.
+  \item Intégration initiale à l'API de capteurs et constitution du jeu de données.
+\end{itemize}\vspace{2pt}
+\end{minipage} &
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+\begin{itemize}[leftmargin=1em, itemsep=2pt, topsep=0pt]
+  \item Finalisation de l'assistant de diagnostic de pannes (RAG) à base de notices PDF.
+  \item Entraînement et validation du modèle de \textbf{maintenance prédictive IoT}.
+  \item Codage de l'algorithme d'aide à la planification des techniciens.
+  \item Calcul des indicateurs complexes (MTBF/MTTR) et génération des rapports de maintenance.
+  \item Documentation technique des API via Swagger.
+\end{itemize}\vspace{2pt}
+\end{minipage} \\
+
+\rowcolor{lightgray}
+\textbf{Livrables communs} &
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+\begin{itemize}[leftmargin=1em, itemsep=2pt, topsep=0pt]
+  \item Script SQL complet du MCD (mono-site).
+  \item Plateforme Web de base opérationnelle.
+  \item API d'OCR et d'ingestion de documents fonctionnelle.
+\end{itemize}\vspace{2pt}
+\end{minipage} &
+\begin{minipage}[t]{\linewidth}\vspace{2pt}
+\begin{itemize}[leftmargin=1em, itemsep=2pt, topsep=0pt]
+  \item Application Web finale intégrée (Laravel + FastAPI).
+  \item Module de maintenance prédictive connecté à l'API de capteurs et opérationnel.
+  \item Rapport de diagnostic et journal d'audit de sécurité opérationnel.
+  \item Rapport technique de fin d'études \& code source validé sous Git.
+\end{itemize}\vspace{2pt}
+\end{minipage} \\
+
+\bottomrule
+\end{longtable}
+
+% ================================================================
+\section{Critères de Livraison et Recette Technique}
+
+\begin{itemize}
+  \item \textbf{Robustesse de l'IA} : le taux d'extraction correcte par l'OCR doit dépasser 85\% sur des photos claires ; l'assistant RAG doit sourcer ses réponses uniquement depuis la documentation fournie (zéro hallucination) ; le modèle de maintenance prédictive doit être évalué sur un jeu de données de test avec des métriques documentées (ex. précision, rappel, ou erreur de prédiction selon l'approche retenue).
+  \item \textbf{Conformité Sécurité} : le code source ne doit contenir aucun mot de passe en clair (utilisation de variables d'environnement) et doit être protégé contre les injections SQL (via l'ORM de Laravel).
+  \item \textbf{Performance des API} : les temps de réponse des routes REST classiques doivent se maintenir sous les 200\,ms ; les appels vers l'API de capteurs externe doivent être gérés de manière asynchrone/tolérante aux erreurs (timeout, indisponibilité temporaire).
+  \item \textbf{Périmètre fonctionnel} : l'ensemble des écrans, modèles de données et rapports doivent être conformes à la gestion d'un site unique.
+\end{itemize}
+
+\vspace{1cm}
+\begin{center}
+\textcolor{midgray}{\rule{0.5\linewidth}{0.4pt}}\\[0.3cm]
+{\small \textcolor{midgray}{GM-Soft — Confidentiel — GMAO Intel-Sec}}
+\end{center}
+
+\end{document}
