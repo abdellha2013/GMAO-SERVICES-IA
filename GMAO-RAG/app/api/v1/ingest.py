@@ -77,7 +77,7 @@ def _create_document(
     id_equipement: int | None = None,
     file_size: int = 0,
 ) -> int:
-    """Insert a ``document`` row in MySQL and return ``id_document``.
+    """Insert a ``documents`` row in MySQL and return ``id_document``.
 
     The storage strategies (MySQL + Qdrant) require every chunk to carry
     ``id_document`` in its metadata.  This function is called once per
@@ -92,10 +92,10 @@ def _create_document(
     with engine.begin() as conn:
         result = conn.execute(
             text(
-                "INSERT INTO document "
+                "INSERT INTO documents "
                 "(titre, nom_fichier, type_fichier, chemin_fichier, taille, "
-                " statut_indexation, id_equipement) "
-                "VALUES (:titre, :nom, :type, :chemin, :taille, 'En_attente', :equip)"
+                " id_equipement) "
+                "VALUES (:titre, :nom, :type, :chemin, :taille, :equip)"
             ),
             {
                 "titre": titre,

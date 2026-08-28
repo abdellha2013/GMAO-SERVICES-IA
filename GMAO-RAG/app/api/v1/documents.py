@@ -3,16 +3,16 @@
 These endpoints provide document metadata and management operations
 by querying MySQL directly (the source of truth for document records).
 
-Real MySQL schema:
-    document:       id_document, titre, nom_fichier, type_fichier,
-                    chemin_fichier, taille, version, date_importation,
-                    statut_indexation (En_attente/Indexe/Echec),
-                    description, id_equipement
-    chunk_rag:      id_chunk, contenu, ordre_chunk, nombre_tokens,
-                    type_source (Document/Panne), statut_embedding,
-                    date_indexation
-    document_chunk: id_chunk, id_document  (junction table)
-    panne_chunk:    id_chunk, id_panne     (junction table)
+Local MySQL schema (base ``gmao``) — schema fusionné, documents uniquement:
+    documents:       id_document, titre, nom_fichier, type_fichier,
+                     chemin_fichier, taille, version, date_importation,
+                     description, id_equipement
+    document_chunks: id_chunk, contenu, ordre_chunk, nombre_tokens,
+                     id_document  (contenu + rattachement fusionnés)
+
+Il n'existe ni table ``chunk_rag``, ni jonction ``document_chunk``,
+ni colonne ``statut_indexation`` : l'état ``indexed`` est dérivé de la
+présence des chunks du document dans Qdrant.
 """
 from __future__ import annotations
 
@@ -58,6 +58,62 @@ def _get_mysql_engine():
     return create_engine(dsn, pool_pre_ping=True)
 
 
+def _delete_qdrant_points(chunk_ids: list[int]) -> None:
+    """Delete the Qdrant points for ``chunk_ids``.
+
+    The point id equals the chunk's ``id_chunk`` (same convention as the
+    ingestion pipeline).  Qdrant failures are logged but do not abort the
+    MySQL deletion, mirroring the tolerant behaviour of
+    :func:`_qdrant_present_chunk_ids`.
+    """
+    if not chunk_ids:
+        return
+    try:
+        from qdrant_client import QdrantClient
+
+        host = os.getenv("QDRANT_HOST", "localhost")
+        port = int(os.getenv("QDRANT_PORT", "6333"))
+        collection = os.getenv("QDRANT_COLLECTION_NAME", "gmao_chunks")
+        client = QdrantClient(host=host, port=port, timeout=5)
+        client.delete(
+            collection_name=collection,
+            points_selector=list(chunk_ids),
+        )
+    except Exception as exc:
+        logger.warning(
+            "Qdrant unreachable while deleting points: %s", exc
+        )
+
+
+def _qdrant_present_chunk_ids(chunk_ids: list[int]) -> set[int]:
+    """Return the subset of ``chunk_ids`` that exist in Qdrant.
+
+    Since the ``gmao`` schema has no ``statut_indexation`` column, the
+    ``indexed`` flag is derived from vector presence: a chunk is indexed
+    when its Qdrant point (id == ``id_chunk``) exists.
+    """
+    if not chunk_ids:
+        return set()
+    try:
+        from qdrant_client import QdrantClient
+
+        host = os.getenv("QDRANT_HOST", "localhost")
+        port = int(os.getenv("QDRANT_PORT", "6333"))
+        collection = os.getenv("QDRANT_COLLECTION_NAME", "gmao_chunks")
+        client = QdrantClient(host=host, port=port, timeout=5)
+        points = client.retrieve(
+            collection_name=collection,
+            ids=list(chunk_ids),
+            with_payload=False,
+        )
+        return {int(point.id) for point in points}
+    except Exception as exc:
+        logger.warning(
+            "Qdrant unreachable while computing 'indexed' flag: %s", exc
+        )
+        return set()
+
+
 # =====================================================================
 # GET /api/v1/documents — List indexed documents
 # =====================================================================
@@ -73,8 +129,9 @@ async def list_documents(
 ) -> DocumentListResponse:
     """List all documents in the database with their chunk counts.
 
-    Joins through ``document_chunk`` to count chunks per document.
-    The ``indexed`` field is derived from ``statut_indexation = 'Indexe'``.
+    Joins through ``document_chunks`` to count chunks per document.
+    The ``indexed`` field is derived from the presence of the document's
+    chunks in Qdrant (the ``gmao`` schema has no ``statut_indexation``).
     """
     engine = _get_mysql_engine()
     try:
@@ -84,25 +141,42 @@ async def list_documents(
                     d.id_document,
                     d.nom_fichier,
                     COALESCE(d.type_fichier, 'document') AS type_fichier,
-                    d.statut_indexation,
                     COUNT(dc.id_chunk) AS chunks_count
-                FROM document d
-                LEFT JOIN document_chunk dc ON dc.id_document = d.id_document
-                GROUP BY d.id_document, d.nom_fichier, d.type_fichier, d.statut_indexation
+                FROM documents d
+                LEFT JOIN document_chunks dc ON dc.id_document = d.id_document
+                GROUP BY d.id_document, d.nom_fichier, d.type_fichier
                 ORDER BY d.id_document DESC
             """))
             rows = result.fetchall()
 
-            documents = [
-                DocumentSummary(
-                    id=row[0],
-                    name=row[1] or "unknown",
-                    source_type=row[2] or "document",
-                    chunks_count=row[4] or 0,
-                    indexed=(row[3] == "Indexe"),
-                )
-                for row in rows
+            # Collect each document's chunk ids, then check which exist
+            # in Qdrant to derive the ``indexed`` flag.
+            chunk_map: dict[int, list[int]] = {}
+            chunk_rows = conn.execute(text(
+                "SELECT id_document, id_chunk FROM document_chunks"
+            )).fetchall()
+            for doc_id, chunk_id in chunk_rows:
+                chunk_map.setdefault(doc_id, []).append(chunk_id)
+
+            all_chunk_ids = [
+                cid for ids in chunk_map.values() for cid in ids
             ]
+            present = _qdrant_present_chunk_ids(all_chunk_ids)
+
+            documents = []
+            for row in rows:
+                doc_id = row[0]
+                doc_chunk_ids = chunk_map.get(doc_id, [])
+                documents.append(
+                    DocumentSummary(
+                        id=doc_id,
+                        name=row[1] or "unknown",
+                        source_type=row[2] or "document",
+                        chunks_count=row[3] or 0,
+                        indexed=bool(doc_chunk_ids)
+                        and all(cid in present for cid in doc_chunk_ids),
+                    )
+                )
 
             return DocumentListResponse(
                 documents=documents,
@@ -131,9 +205,10 @@ async def get_document(
 ) -> DocumentDetailResponse:
     """Fetch a single document and all its chunks from MySQL.
 
-    Joins through ``document_chunk`` to find chunks belonging to this
-    document, then enriches each chunk with parent metadata (id_document,
-    id_panne) and equipment info.
+    The ``gmao`` schema stores chunk content directly in
+    ``document_chunks`` (no ``chunk_rag``/junction split), so the chunks
+    are read straight from that table.  ``indexed`` is derived from
+    Qdrant presence.
     """
     engine = _get_mysql_engine()
     try:
@@ -144,10 +219,9 @@ async def get_document(
                     d.id_document,
                     d.nom_fichier,
                     COALESCE(d.type_fichier, 'document') AS type_fichier,
-                    d.statut_indexation,
                     d.titre,
                     d.description
-                FROM document d
+                FROM documents d
                 WHERE d.id_document = :doc_id
             """), {"doc_id": document_id})
             doc_row = doc_result.fetchone()
@@ -158,28 +232,30 @@ async def get_document(
                     detail=f"Document {document_id} not found.",
                 )
 
-            document = DocumentSummary(
-                id=doc_row[0],
-                name=doc_row[1] or "unknown",
-                source_type=doc_row[2] or "document",
-                chunks_count=0,  # updated below
-                indexed=(doc_row[3] == "Indexe"),
-            )
-
-            # --- Fetch chunks via document_chunk junction table ---
+            # --- Fetch chunks directly from document_chunks ---
             chunks_result = conn.execute(text("""
                 SELECT
                     c.id_chunk,
                     c.contenu,
                     c.ordre_chunk,
-                    c.type_source,
-                    dc.id_document
-                FROM chunk_rag c
-                INNER JOIN document_chunk dc ON dc.id_chunk = c.id_chunk
-                WHERE dc.id_document = :doc_id
+                    c.id_document
+                FROM document_chunks c
+                WHERE c.id_document = :doc_id
                 ORDER BY c.ordre_chunk ASC
             """), {"doc_id": document_id})
             chunk_rows = chunks_result.fetchall()
+
+            chunk_ids = [row[0] for row in chunk_rows]
+            present = _qdrant_present_chunk_ids(chunk_ids)
+
+            document = DocumentSummary(
+                id=doc_row[0],
+                name=doc_row[1] or "unknown",
+                source_type=doc_row[2] or "document",
+                chunks_count=len(chunk_rows),
+                indexed=bool(chunk_ids)
+                and all(cid in present for cid in chunk_ids),
+            )
 
             chunks = [
                 RetrievedChunkSchema(
@@ -188,16 +264,14 @@ async def get_document(
                     score=0.0,
                     rank=int(row[2] or 0),
                     source_name=document.name,
-                    source_type=row[3] or "document",
-                    id_document=row[4],
+                    source_type="document",
+                    id_document=row[3],
                     id_panne=None,
                     id_equipement=None,
                     retrieval_strategy="",
                 )
                 for row in chunk_rows
             ]
-
-            document.chunks_count = len(chunks)
 
             return DocumentDetailResponse(
                 document=document,
@@ -228,16 +302,18 @@ async def delete_document(
 ) -> DeleteResponse:
     """Delete a document and its associated chunks.
 
-    Removes chunk associations from ``document_chunk``, then deletes
-    the chunks from ``chunk_rag`` and the document record from
-    ``document``.
+    In the ``gmao`` schema chunk content lives directly in
+    ``document_chunks`` (id_chunk, contenu, ...  id_document) with an
+    ``ON DELETE CASCADE`` from ``documents``, so deleting the document
+    row removes its chunks; the explicit delete below keeps the
+    ``deleted_chunks`` count accurate and is FK-safe either way.
     """
     engine = _get_mysql_engine()
     try:
         with engine.begin() as conn:
             # --- Check document exists ---
             result = conn.execute(
-                text("SELECT COUNT(*) FROM document WHERE id_document = :doc_id"),
+                text("SELECT COUNT(*) FROM documents WHERE id_document = :doc_id"),
                 {"doc_id": document_id},
             )
             if result.scalar() == 0:
@@ -248,32 +324,29 @@ async def delete_document(
 
             # --- Find chunk IDs linked to this document ---
             chunk_ids_result = conn.execute(
-                text("SELECT id_chunk FROM document_chunk WHERE id_document = :doc_id"),
+                text("SELECT id_chunk FROM document_chunks WHERE id_document = :doc_id"),
                 {"doc_id": document_id},
             )
             chunk_ids = [row[0] for row in chunk_ids_result.fetchall()]
 
-            # --- Delete junction rows ---
-            conn.execute(
-                text("DELETE FROM document_chunk WHERE id_document = :doc_id"),
-                {"doc_id": document_id},
-            )
-
-            # --- Delete chunk_rag rows ---
+            # --- Delete the chunks themselves ---
             deleted_chunks = 0
             if chunk_ids:
                 # Use IN clause with bound parameters
                 placeholders = ", ".join(f":id_{i}" for i in range(len(chunk_ids)))
                 params = {f"id_{i}": cid for i, cid in enumerate(chunk_ids)}
                 delete_result = conn.execute(
-                    text(f"DELETE FROM chunk_rag WHERE id_chunk IN ({placeholders})"),
+                    text(f"DELETE FROM document_chunks WHERE id_chunk IN ({placeholders})"),
                     params,
                 )
                 deleted_chunks = delete_result.rowcount
 
-            # --- Delete document record ---
+            # --- Delete the corresponding Qdrant points ---
+            _delete_qdrant_points(chunk_ids)
+
+            # --- Delete document record (cascades to remaining chunks) ---
             conn.execute(
-                text("DELETE FROM document WHERE id_document = :doc_id"),
+                text("DELETE FROM documents WHERE id_document = :doc_id"),
                 {"doc_id": document_id},
             )
 

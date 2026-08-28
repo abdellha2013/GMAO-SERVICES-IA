@@ -368,7 +368,7 @@ class MySQLLoader(MySQLSource):
 
         if self._id_panne is not None:
             rows = self.execute_query(
-                "SELECT id_panne, id_equipement FROM panne "
+                "SELECT id_panne, id_equipement FROM pannes "
                 "WHERE id_panne = :parent_id",
                 {"parent_id": self._id_panne},
             )
@@ -385,7 +385,7 @@ class MySQLLoader(MySQLSource):
 
         if self._id_document is not None:
             rows = self.execute_query(
-                "SELECT id_document, id_equipement FROM document "
+                "SELECT id_document, id_equipement FROM documents "
                 "WHERE id_document = :parent_id",
                 {"parent_id": self._id_document},
             )

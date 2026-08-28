@@ -119,7 +119,7 @@ class HybridRetrieval(RetrievalStrategy):
         top_k: int,
         filters: RetrievalFilter,
     ) -> list[RetrievedChunk]:
-        """Perform a read-only lexical lookup on ``chunk_rag.contenu``."""
+        """Perform a read-only lexical lookup on ``document_chunks.contenu``."""
         # §1.10: missing DSN → RetrievalValidationError, not ConnectionError.
         if not self.vector.dsn:
             raise RetrievalValidationError(
@@ -143,36 +143,26 @@ class HybridRetrieval(RetrievalStrategy):
         }
 
         if filters.id_document is not None:
-            clauses.append("d.id_document = :id_document")
+            clauses.append("c.id_document = :id_document")
             params["id_document"] = filters.id_document
-        if filters.id_panne is not None:
-            clauses.append("p.id_panne = :id_panne")
-            params["id_panne"] = filters.id_panne
         if filters.id_equipement is not None:
-            clauses.append(
-                "COALESCE(d.id_equipement, p.id_equipement) "
-                "= :id_equipement"
-            )
+            clauses.append("d.id_equipement = :id_equipement")
             params["id_equipement"] = filters.id_equipement
         if filters.source_type is not None:
             clauses.append(
-                "LOWER(COALESCE(d.type_fichier, 'panne')) "
+                "LOWER(COALESCE(d.type_fichier, 'document')) "
                 "= :source_type"
             )
             params["source_type"] = filters.source_type
 
         sql = (
             "SELECT c.id_chunk, c.contenu, "
-            "d.id_document, p.id_panne, "
-            "COALESCE(d.id_equipement, p.id_equipement) id_equipement, "
-            "COALESCE(d.nom_fichier, CONCAT('panne:', p.id_panne)) "
-            "source_name, "
-            "COALESCE(LOWER(d.type_fichier), 'panne') source_type "
-            "FROM chunk_rag c "
-            "LEFT JOIN document_chunk dc ON dc.id_chunk = c.id_chunk "
-            "LEFT JOIN document d ON d.id_document = dc.id_document "
-            "LEFT JOIN panne_chunk pc ON pc.id_chunk = c.id_chunk "
-            "LEFT JOIN panne p ON p.id_panne = pc.id_panne "
+            "c.id_document, NULL AS id_panne, "
+            "d.id_equipement, "
+            "d.nom_fichier source_name, "
+            "COALESCE(LOWER(d.type_fichier), 'document') source_type "
+            "FROM document_chunks c "
+            "LEFT JOIN documents d ON d.id_document = c.id_document "
             "WHERE " + " AND ".join(clauses) + " LIMIT :limit"
         )
 

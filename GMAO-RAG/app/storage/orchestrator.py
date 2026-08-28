@@ -91,6 +91,8 @@ class StorageOrchestrator:
         After a successful Qdrant outcome, the corresponding MySQL rows are
         marked as indexed via :meth:`_mark_indexed_after_qdrant`, so that
         ``QdrantStorage`` itself never has to know about the MySQL schema.
+        (In the ``gmao`` schema ``MySQLStorage.mark_indexed`` is a no-op —
+        indexed status is derived from Qdrant presence.)
         """
         self._check_alignment(chunks, embeddings)
         outcomes: list[StorageOutcome] = []
@@ -150,7 +152,7 @@ class StorageOrchestrator:
         """Mark the given chunks as indexed in MySQL after a Qdrant success.
 
         This replaces the previous design where ``QdrantStorage.save()``
-        opened its own SQLAlchemy connection to update ``chunk_rag``
+        opened its own SQLAlchemy connection to update the MySQL schema
         directly. That cross-strategy write now lives here, and is
         delegated to ``MySQLStorage.mark_indexed()`` so that
         ``QdrantStorage`` no longer needs to import ``sqlalchemy`` or know

@@ -95,14 +95,16 @@ def chunk_from_row(
 class QdrantVectorRetrieval(RetrievalStrategy):
     """Vector search with read-only MySQL hydration.
 
-    QdrantStorage stores only ``id_chunk``, ``type_source`` and
-    ``id_equipement``, not content or parent IDs; candidates are therefore
-    hydrated in one MySQL ``SELECT``.  Filters unavailable in Qdrant are
-    applied by that SELECT.
+    MySQLStorage stores chunks in the fused ``document_chunks`` table of
+    the local ``gmao`` schema (content + ``id_document`` in one row);
+    Qdrant stores ``id_chunk``, ``type_source`` and ``id_equipement``.
+    Candidates are hydrated in one MySQL ``SELECT``.  Filters unavailable
+    in Qdrant are applied by that SELECT.  Pannes are not indexed in the
+    local schema, so ``id_panne`` filtered queries always return nothing.
 
     .. note::
 
-       Filtering by ``id_document`` / ``id_panne`` is applied **after**
+       Filtering by ``id_document`` is applied **after**
        Qdrant has already truncated to ``top_k`` candidates.  When
        combined with a small ``top_k`` this can silently drop relevant
        chunks that belong to the requested document but were ranked below
@@ -159,8 +161,8 @@ class QdrantVectorRetrieval(RetrievalStrategy):
     def supports(self, filters: RetrievalFilter) -> bool:
         """Qdrant supports every filter defined in ``RetrievalFilter``.
 
-        Filters that are absent from the Qdrant payload (``id_document``,
-        ``id_panne``) are forwarded to MySQL during hydration.
+        Filters that are absent from the Qdrant payload (``id_document``)
+        are forwarded to MySQL during hydration.
         """
         return True
 
@@ -339,36 +341,26 @@ class QdrantVectorRetrieval(RetrievalStrategy):
         params: dict[str, Any] = {"ids": tuple(ids)}
 
         if filters.id_document is not None:
-            clauses.append("d.id_document = :id_document")
+            clauses.append("c.id_document = :id_document")
             params["id_document"] = filters.id_document
-        if filters.id_panne is not None:
-            clauses.append("p.id_panne = :id_panne")
-            params["id_panne"] = filters.id_panne
         if filters.id_equipement is not None:
-            clauses.append(
-                "COALESCE(d.id_equipement, p.id_equipement) "
-                "= :id_equipement"
-            )
+            clauses.append("d.id_equipement = :id_equipement")
             params["id_equipement"] = filters.id_equipement
         if filters.source_type is not None:
             clauses.append(
-                "LOWER(COALESCE(d.type_fichier, 'panne')) "
+                "LOWER(COALESCE(d.type_fichier, 'document')) "
                 "= :source_type"
             )
             params["source_type"] = filters.source_type
 
         sql = (
-            "SELECT c.id_chunk, c.contenu, c.type_source, "
-            "d.id_document, p.id_panne, "
-            "COALESCE(d.id_equipement, p.id_equipement) id_equipement, "
-            "COALESCE(d.nom_fichier, CONCAT('panne:', p.id_panne)) "
-            "source_name, "
-            "COALESCE(LOWER(d.type_fichier), 'panne') source_type "
-            "FROM chunk_rag c "
-            "LEFT JOIN document_chunk dc ON dc.id_chunk = c.id_chunk "
-            "LEFT JOIN document d ON d.id_document = dc.id_document "
-            "LEFT JOIN panne_chunk pc ON pc.id_chunk = c.id_chunk "
-            "LEFT JOIN panne p ON p.id_panne = pc.id_panne "
+            "SELECT c.id_chunk, c.contenu, "
+            "c.id_document, NULL AS id_panne, "
+            "d.id_equipement, "
+            "d.nom_fichier source_name, "
+            "COALESCE(LOWER(d.type_fichier), 'document') source_type "
+            "FROM document_chunks c "
+            "LEFT JOIN documents d ON d.id_document = c.id_document "
             "WHERE " + " AND ".join(clauses)
         )
 

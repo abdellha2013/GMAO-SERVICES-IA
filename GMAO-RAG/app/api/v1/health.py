@@ -187,7 +187,7 @@ async def stats(
 ) -> StatsResponse:
     """Return high-level statistics about the pipeline state."""
     return StatsResponse(
-        documents_count=_count_mysql("document"),
-        chunks_count=_count_mysql("chunk_rag"),
+        documents_count=_count_mysql("documents"),
+        chunks_count=_count_mysql("document_chunks"),
         qdrant_points=_count_qdrant_points(),
     )

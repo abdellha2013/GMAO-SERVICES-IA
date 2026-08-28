@@ -1,11 +1,13 @@
 """MySQL storage strategy.
 
-Persists chunks (and their MySQL-generated identifiers) into
-``chunk_rag`` plus the relevant child table (``document_chunk`` or
-``panne_chunk``), and exposes the operations the orchestrator needs to
-manage a chunk's lifecycle in MySQL: ``save``, ``delete`` and
-``mark_indexed`` (called by the orchestrator once a chunk has been
-successfully written to Qdrant).
+Persists chunks (and their MySQL-generated identifiers) into the fused
+``document_chunks`` table of the local ``gmao`` schema (chunk content
+plus ``id_document`` parent in one row — there is no ``chunk_rag`` /
+``document_chunk`` / ``panne_chunk`` split), and exposes the operations
+the orchestrator needs to manage a chunk's lifecycle in MySQL: ``save``,
+``delete`` and ``mark_indexed`` (kept as a no-op since the ``gmao``
+schema has no ``statut_embedding`` column — indexed status is derived
+from Qdrant presence instead).
 """
 from __future__ import annotations
 
@@ -20,13 +22,6 @@ from app.exceptions import StorageConnectionError, StorageValidationError, Stora
 from app.models.chunk import Chunk
 from app.models.embedding import Embedding
 from app.storage.base import StorageOutcome, StorageStrategy
-
-# Child tables that reference chunk_rag(id_chunk). If the foreign keys in
-# the schema are declared with ON DELETE CASCADE, deleting from chunk_rag
-# is enough and these explicit deletes are redundant but harmless. If they
-# are not, these deletes are required to avoid leaving orphaned rows or
-# hitting a foreign-key violation on the chunk_rag delete itself.
-_CHILD_TABLES: tuple[str, ...] = ("document_chunk", "panne_chunk")
 
 
 class MySQLStorage(StorageStrategy):
@@ -54,18 +49,19 @@ class MySQLStorage(StorageStrategy):
         return f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}"
 
     def supports(self, chunks: Sequence[Chunk], embeddings: Sequence[Embedding]) -> bool:
-        """Return ``True`` when every chunk carries a document or panne parent id.
+        """Return ``True`` when every chunk carries a document parent id.
 
-        See STORAGE.md for the full metadata contract expected at this
-        stage of the pipeline (``id_document`` / ``id_panne``).
+        In the fused ``gmao`` schema chunks are stored in
+        ``document_chunks`` which requires ``id_document``.  See
+        STORAGE.md for the full metadata contract.
         """
         return all(
-            bool(chunk.metadata.get("id_document") or chunk.metadata.get("id_panne"))
+            bool(chunk.metadata.get("id_document"))
             for chunk in chunks
         )
 
     def save(self, chunks: Sequence[Chunk], embeddings: Sequence[Embedding]) -> StorageOutcome:
-        """Insert ``chunks`` into ``chunk_rag`` and their matching child table.
+        """Insert ``chunks`` into ``document_chunks``.
 
         On success, each ``chunk.metadata["id_chunk"]`` is populated with
         the MySQL-generated primary key, which downstream strategies
@@ -73,41 +69,31 @@ class MySQLStorage(StorageStrategy):
         """
         if not self.supports(chunks, embeddings):
             raise StorageValidationError(
-                message="Each chunk requires source_type document/panne and its parent ID in metadata."
+                message="Each chunk requires id_document in metadata."
             )
         saved_ids: list[int] = []
         try:
             with self._engine.begin() as connection:
                 for chunk in chunks:
-                    is_document = bool(chunk.metadata.get("id_document"))
-                    source = "Document" if is_document else "Panne"
+                    tokens = chunk.metadata.get("nombre_tokens")
+                    if tokens is None:
+                        tokens = len(chunk.content.split())
                     result = connection.execute(
                         text(
-                            "INSERT INTO chunk_rag "
-                            "(contenu, ordre_chunk, nombre_tokens, type_source, statut_embedding) "
-                            "VALUES (:content, :order, :tokens, :source, 'En_attente')"
+                            "INSERT INTO document_chunks "
+                            "(contenu, ordre_chunk, nombre_tokens, id_document) "
+                            "VALUES (:content, :order, :tokens, :parent_id)"
                         ),
                         {
                             "content": chunk.content,
                             "order": chunk.chunk_index,
-                            "tokens": chunk.metadata.get("nombre_tokens"),
-                            "source": source,
+                            "tokens": tokens,
+                            "parent_id": chunk.metadata["id_document"],
                         },
                     )
                     chunk_id = int(result.lastrowid)
                     saved_ids.append(chunk_id)
                     chunk.metadata["id_chunk"] = chunk_id
-                    if is_document:
-                        child_table, parent_key = "document_chunk", "id_document"
-                    else:
-                        child_table, parent_key = "panne_chunk", "id_panne"
-                    connection.execute(
-                        text(
-                            f"INSERT INTO {child_table} (id_chunk, {parent_key}) "
-                            f"VALUES (:id_chunk, :parent_id)"
-                        ),
-                        {"id_chunk": chunk_id, "parent_id": chunk.metadata[parent_key]},
-                    )
         except OperationalError as exc:
             raise StorageConnectionError(
                 message="Unable to connect to the MySQL storage backend.",
@@ -118,25 +104,19 @@ class MySQLStorage(StorageStrategy):
         return StorageOutcome(self.name, tuple(saved_ids))
 
     def delete(self, chunk_ids: Sequence[int]) -> StorageOutcome:
-        """Delete the given chunks from ``chunk_rag`` and its child tables.
+        """Delete the given chunks from ``document_chunks``.
 
-        Child rows are deleted first, in the same transaction, so this is
-        safe whether or not ``ON DELETE CASCADE`` is configured on the
-        foreign keys: if it is, these deletes are a no-op by the time
-        ``chunk_rag`` is deleted; if it is not, they prevent orphaned rows
-        or a foreign-key violation.
+        The ``gmao`` schema declares ``ON DELETE CASCADE`` from the
+        ``documents`` parent, but these rows are deleted explicitly so the
+        outcome count is accurate regardless of whether the parent is
+        removed afterwards.
         """
         deleted_ids: list[int] = []
         try:
             with self._engine.begin() as connection:
                 for chunk_id in chunk_ids:
-                    for child_table in _CHILD_TABLES:
-                        connection.execute(
-                            text(f"DELETE FROM {child_table} WHERE id_chunk = :id"),
-                            {"id": chunk_id},
-                        )
                     connection.execute(
-                        text("DELETE FROM chunk_rag WHERE id_chunk = :id"),
+                        text("DELETE FROM document_chunks WHERE id_chunk = :id"),
                         {"id": chunk_id},
                     )
                     deleted_ids.append(chunk_id)
@@ -150,32 +130,8 @@ class MySQLStorage(StorageStrategy):
         return StorageOutcome(self.name, tuple(deleted_ids))
 
     def mark_indexed(self, chunk_ids: Sequence[int]) -> None:
-        """Flag ``chunk_ids`` as indexed once they have been written to Qdrant.
+        """No-op: the ``gmao`` schema has no ``statut_embedding`` column.
 
-        Called by :class:`~app.storage.orchestrator.StorageOrchestrator`
-        after a successful ``QdrantStorage.save()``. ``QdrantStorage``
-        itself must never call this or otherwise touch MySQL directly.
+        ``indexed`` status is derived from Qdrant presence instead, so
+        this hook (kept for the orchestrator interface) does nothing.
         """
-        if not chunk_ids:
-            return
-        try:
-            with self._engine.begin() as connection:
-                for chunk_id in chunk_ids:
-                    connection.execute(
-                        text(
-                            "UPDATE chunk_rag "
-                            "SET statut_embedding = 'Indexe', date_indexation = NOW() "
-                            "WHERE id_chunk = :id"
-                        ),
-                        {"id": chunk_id},
-                    )
-        except OperationalError as exc:
-            raise StorageConnectionError(
-                message="Unable to connect to the MySQL storage backend.",
-                original=exc,
-            ) from exc
-        except SQLAlchemyError as exc:
-            raise StorageWriteError(
-                message="Qdrant points were written but the MySQL status update failed.",
-                original=exc,
-            ) from exc
