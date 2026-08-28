@@ -60,50 +60,7 @@ API :
 
 ---
 
-## Démarrage rapide avec Docker (recommandé)
-
-La méthode la plus simple pour lancer le projet sur une nouvelle machine :
-
-```bash
-# 1. Cloner le projet
-git clone https://github.com/abdellha2013/GMAO-RAG.git
-cd GMAO-RAG
-
-# 2. Configurer les variables d'environnement
-cp .env.example .env
-# Éditer .env avec vos clés API (OPENAI_API_KEY, etc.)
-
-# 3. Tout lancer (MySQL + Qdrant + API)
-docker compose up --build
-
-# 4. Vérifier
-curl http://localhost:8000/api/v1/health
-```
-
-**Ce que lance Docker Compose :**
-
-| Service | Port | Description |
-|---------|------|-------------|
-| `gmao-api` | 8000 | API FastAPI (application principale) |
-| `gmao-mysql` | 3306 | MySQL 8.0 (base relationnelle) |
-| `gmao-qdrant` | 6333 | Qdrant (base vectorielle) |
-
-**Commandes utiles :**
-
-```bash
-docker compose up --build          # Tout lancer (avec rebuild)
-docker compose up -d               # En arrière-plan
-docker compose logs -f app         # Voir les logs de l'API
-docker compose down                # Tout arrêter
-docker compose down -v             # Arrêter + supprimer les données
-```
-
-> L'entrypoint attend automatiquement que MySQL et Qdrant soient prêts,
-> crée la collection Qdrant, puis lance l'API.
-
----
-
-## Prérequis (installation manuelle)
+## Prérequis
 
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/) (gestionnaire de dépendances)
@@ -113,7 +70,7 @@ docker compose down -v             # Arrêter + supprimer les données
 
 ---
 
-## Installation (sans Docker)
+## Installation
 
 ### 1. Cloner le projet
 
@@ -154,20 +111,17 @@ sudo systemctl start mysql       # Linux (systemd)
 # brew services start mysql      # macOS (Homebrew)
 
 # Créer la base et les tables
-mysql -u root -p < db/mysql/creation_bdd_rag_gmao.sql
+mysql -u root -p < ../db/schema_gmao.sql
 
 # Vérifier
-mysql -u root -p -e "SHOW DATABASES;" | grep gmao_rag
+mysql -u root -p -e "SHOW DATABASES;" | grep gmao
 ```
 
 ### 5. Lancer Qdrant et créer la collection
 
 ```bash
-# Démarrer Qdrant (Docker)
-docker run -d --name qdrant \
-  -p 6333:6333 -p 6334:6334 \
-  -v $(pwd)/qdrant_storage:/qdrant/storage \
-  qdrant/qdrant
+# Démarrer Qdrant (localement)
+./qdrant --storage-dir qdrant_storage
 
 # Créer la collection vectorielle
 PYTHONPATH=. python db/qdrant/creation_qdrant_rag_gmao.py
@@ -186,7 +140,7 @@ curl http://localhost:6333/collections
 PYTHONPATH=/chemin/vers/GMAO-RAG
 
 # MySQL
-MYSQL_DSN=mysql+pymysql://root:VOTRE_MDP@127.0.0.1:3306/gmao_rag
+MYSQL_DSN=mysql+pymysql://root:VOTRE_MDP@127.0.0.1:3306/gmao
 
 # Qdrant
 QDRANT_HOST=localhost
@@ -326,10 +280,10 @@ curl -s http://localhost:8000/api/v1/ingest/database \
   -H "Content-Type: application/json" \
   -d '{
     "host": "127.0.0.1",
-    "database": "gmao_rag",
+    "database": "gmao",
     "user": "root",
     "password": "VOTRE_MDP",
-    "table": "panne",
+    "table": "pannes",
     "id_equipement": 1
   }'
 ```

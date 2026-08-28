@@ -144,13 +144,9 @@ GMAO-ANALYTICS/output/
 GMAO-ANALYTICS/*.generated.*
 
 # ═══════════════════════════════════════════════════════════════════
-# GMAO-RAG — données volumineuses, Docker et tests hors repo
+# GMAO-RAG — données volumineuses et tests hors repo
 # ═══════════════════════════════════════════════════════════════════
 GMAO-RAG/qdrant_storage/
-GMAO-RAG/Dockerfile
-GMAO-RAG/docker-compose.yml
-GMAO-RAG/.dockerignore
-GMAO-RAG/docker/
 GMAO-RAG/tests/
 GMAO-RAG/app/data_sources/CORRECTIONS_APPLIQUEES.md
 GMAO-RAG/app/data_sources/database/AGENT_CONTEXT.md

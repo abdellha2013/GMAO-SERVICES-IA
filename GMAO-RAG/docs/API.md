@@ -500,10 +500,10 @@ curl -s http://localhost:8000/api/v1/ingest/database \
   -H "Content-Type: application/json" \
   -d '{
     "host": "127.0.0.1",
-    "database": "gmao_rag",
+    "database": "gmao",
     "user": "root",
     "password": "",
-    "table": "panne",
+    "table": "pannes",
     "id_equipement": 1
   }'
 
@@ -513,11 +513,11 @@ curl -s http://localhost:8000/api/v1/ingest/database \
   -H "Content-Type: application/json" \
   -d '{
     "host": "127.0.0.1",
-    "database": "gmao_rag",
+    "database": "gmao",
     "user": "root",
     "password": "",
-    "table": "panne",
-    "query": "SELECT * FROM panne LIMIT 10",
+    "table": "pannes",
+    "query": "SELECT * FROM pannes LIMIT 10",
     "id_equipement": 1
   }'
 ```

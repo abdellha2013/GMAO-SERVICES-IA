@@ -1,11 +1,10 @@
 """
 GMAO-RAG — Création de la collection Qdrant et de ses index de payload.
 
-Cette collection est le pendant vectoriel de la table `chunk_rag` (MySQL) :
-- id du point Qdrant  == chunk_rag.id_chunk (entier partagé)
-- payload.id_chunk    == chunk_rag.id_chunk (permet de revenir en MySQL
-                          pour relire le contenu complet, l'historique
-                          d'indexation, etc.)
+Cette collection est le pendant vectoriel de la table `document_chunks` (MySQL) :
+- id du point Qdrant  == document_chunks.id_chunk (entier partagé)
+- payload.id_chunk    == document_chunks.id_chunk (permet de revenir en MySQL
+                          pour relire le contenu complet, etc.)
 
 Aucune jointure n'existe côté Qdrant : tout champ nécessaire au filtrage
 doit être dupliqué dans le payload au moment de l'indexation.
@@ -13,13 +12,6 @@ doit être dupliqué dans le payload au moment de l'indexation.
 
 
 from __future__ import annotations
-"""
-pour demarer le Serveur Qdrant localemnent avec Docker :
-docker run -p 6333:6333 -p 6334:6334 \
-    -v $(pwd)/qdrant_storage:/qdrant/storage:z \
-    qdrant/qdrant
-
-"""
 import os
 from dataclasses import dataclass
 from pathlib import Path
