@@ -141,10 +141,11 @@ async def list_documents(
                     d.id_document,
                     d.nom_fichier,
                     COALESCE(d.type_fichier, 'document') AS type_fichier,
-                    COUNT(dc.id_chunk) AS chunks_count
+                    COUNT(dc.id_chunk) AS chunks_count,
+                    d.id_equipement
                 FROM documents d
                 LEFT JOIN document_chunks dc ON dc.id_document = d.id_document
-                GROUP BY d.id_document, d.nom_fichier, d.type_fichier
+                GROUP BY d.id_document, d.nom_fichier, d.type_fichier, d.id_equipement
                 ORDER BY d.id_document DESC
             """))
             rows = result.fetchall()
@@ -172,6 +173,7 @@ async def list_documents(
                         id=doc_id,
                         name=row[1] or "unknown",
                         source_type=row[2] or "document",
+                        id_equipement=row[4],
                         chunks_count=row[3] or 0,
                         indexed=bool(doc_chunk_ids)
                         and all(cid in present for cid in doc_chunk_ids),
@@ -220,7 +222,8 @@ async def get_document(
                     d.nom_fichier,
                     COALESCE(d.type_fichier, 'document') AS type_fichier,
                     d.titre,
-                    d.description
+                    d.description,
+                    d.id_equipement
                 FROM documents d
                 WHERE d.id_document = :doc_id
             """), {"doc_id": document_id})
@@ -252,6 +255,7 @@ async def get_document(
                 id=doc_row[0],
                 name=doc_row[1] or "unknown",
                 source_type=doc_row[2] or "document",
+                id_equipement=doc_row[5],
                 chunks_count=len(chunk_rows),
                 indexed=bool(chunk_ids)
                 and all(cid in present for cid in chunk_ids),
@@ -267,7 +271,7 @@ async def get_document(
                     source_type="document",
                     id_document=row[3],
                     id_panne=None,
-                    id_equipement=None,
+                    id_equipement=doc_row[5],
                     retrieval_strategy="",
                 )
                 for row in chunk_rows
@@ -284,6 +288,50 @@ async def get_document(
         raise HTTPException(status_code=500, detail=f"Database error: {exc}")
     finally:
         engine.dispose()
+
+
+# =====================================================================
+# Document deletion helper (shared with the ingest layer)
+# =====================================================================
+
+def delete_document_by_id(engine: object, document_id: int) -> int:
+    """Delete a document row and its chunks (MySQL + Qdrant).
+
+    In the ``gmao`` schema chunk content lives directly in
+    ``document_chunks`` (``id_chunk``, ``contenu``, ... ``id_document``).
+    The chunk rows are deleted explicitly (to keep an accurate count)
+    and the corresponding Qdrant points as well; deleting the document
+    row cascades to any remaining chunks.
+
+    Returns the number of chunks deleted from ``document_chunks``.
+    """
+    with engine.begin() as conn:
+        chunk_ids_result = conn.execute(
+            text("SELECT id_chunk FROM document_chunks WHERE id_document = :doc_id"),
+            {"doc_id": document_id},
+        )
+        chunk_ids = [row[0] for row in chunk_ids_result.fetchall()]
+
+        deleted_chunks = 0
+        if chunk_ids:
+            placeholders = ", ".join(f":id_{i}" for i in range(len(chunk_ids)))
+            params = {f"id_{i}": cid for i, cid in enumerate(chunk_ids)}
+            delete_result = conn.execute(
+                text(f"DELETE FROM document_chunks WHERE id_chunk IN ({placeholders})"),
+                params,
+            )
+            deleted_chunks = delete_result.rowcount
+
+    # Qdrant deletion is tolerant — a failure does not abort the MySQL work.
+    _delete_qdrant_points(chunk_ids)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("DELETE FROM documents WHERE id_document = :doc_id"),
+            {"doc_id": document_id},
+        )
+
+    return deleted_chunks
 
 
 # =====================================================================
@@ -322,44 +370,18 @@ async def delete_document(
                     detail=f"Document {document_id} not found.",
                 )
 
-            # --- Find chunk IDs linked to this document ---
-            chunk_ids_result = conn.execute(
-                text("SELECT id_chunk FROM document_chunks WHERE id_document = :doc_id"),
-                {"doc_id": document_id},
-            )
-            chunk_ids = [row[0] for row in chunk_ids_result.fetchall()]
+        deleted_chunks = delete_document_by_id(engine, document_id)
 
-            # --- Delete the chunks themselves ---
-            deleted_chunks = 0
-            if chunk_ids:
-                # Use IN clause with bound parameters
-                placeholders = ", ".join(f":id_{i}" for i in range(len(chunk_ids)))
-                params = {f"id_{i}": cid for i, cid in enumerate(chunk_ids)}
-                delete_result = conn.execute(
-                    text(f"DELETE FROM document_chunks WHERE id_chunk IN ({placeholders})"),
-                    params,
-                )
-                deleted_chunks = delete_result.rowcount
+        logger.info(
+            "Deleted document %s and %d chunks.",
+            document_id,
+            deleted_chunks,
+        )
 
-            # --- Delete the corresponding Qdrant points ---
-            _delete_qdrant_points(chunk_ids)
-
-            # --- Delete document record (cascades to remaining chunks) ---
-            conn.execute(
-                text("DELETE FROM documents WHERE id_document = :doc_id"),
-                {"doc_id": document_id},
-            )
-
-            logger.info(
-                "Deleted document %s and %d chunks.",
-                document_id,
-                deleted_chunks,
-            )
-
-            return DeleteResponse(
-                status="ok",
-                deleted_chunks=deleted_chunks,
-            )
+        return DeleteResponse(
+            status="ok",
+            deleted_chunks=deleted_chunks,
+        )
     except HTTPException:
         raise
     except Exception as exc:

@@ -71,6 +71,25 @@ class LLMOrchestrator:
     def strategy_name(self) -> str:
         return self._strategy_name
 
+    def warmup(self) -> str:
+        """Initialise le client de la stratégie LLM par défaut (idempotent).
+
+        Appelé au démarrage pour sortir la création du client HTTP des
+        temps de réponse.  Échoue proprement (exception) si la clé API
+        configurée est absente — l'appelant décide de tolérer ou non.
+
+        Returns
+        -------
+        str
+            Le nom de la stratégie préchargée.
+        """
+        strategy_cls = self._registry.get(self._strategy_name)
+        strategy: LLMStrategy = strategy_cls(**self._strategy_options)
+        preload = getattr(strategy, "preload", None)
+        if callable(preload):
+            preload()
+        return strategy.name
+
     def generate(
         self,
         query: str,

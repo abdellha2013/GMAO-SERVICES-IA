@@ -7,6 +7,7 @@ from gmao_ocr.qr.validation import (
     extract_id_from_url,
     host_matches_allowed,
     validate_qr_url,
+    validate_qr_url_reason,
 )
 
 VALID = "https://mondomaine.com/api/equipements/5"
@@ -54,3 +55,25 @@ def test_host_matches_allowed():
     assert host_matches_allowed("https://mondomaine.com/api/equipements/5", ["mondomaine.com"]) is True
     assert host_matches_allowed("https://x.mondomaine.com/api/equipements/5", ["mondomaine.com"]) is True
     assert host_matches_allowed("https://attacker.com/api/equipements/5", ["mondomaine.com"]) is False
+
+
+def test_hostname_with_port_ignored_for_matching():
+    # Le port ne doit pas casser la comparaison d'hôte (localhost:8001 → localhost).
+    assert host_matches_allowed("http://localhost:8001/api/equipements/1", ["localhost"]) is True
+    assert host_matches_allowed("http://localhost:8001/api/equipements/1", ["10.96.93.203"]) is False
+
+
+def test_localhost_accepted_when_allowed():
+    assert validate_qr_url("http://localhost:8001/api/equipements/1", ["localhost"]) == 1
+
+
+def test_reason_distinguishes_path_from_host():
+    # Chemin valide + hôte interdit → motif clair, distinct du chemin invalide.
+    ok_id, reason = validate_qr_url_reason("http://localhost:8001/api/equipements/1", [])
+    assert ok_id == 1 and reason is None
+
+    _, reason = validate_qr_url_reason("http://localhost:8001/api/equipements/1", ["10.96.93.203"])
+    assert reason == "Domaine non autorisé"
+
+    _, reason = validate_qr_url_reason("http://localhost:8001/autre/chemin", ["localhost"])
+    assert reason == "URL non reconnue"

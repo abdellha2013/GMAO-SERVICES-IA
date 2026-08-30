@@ -309,23 +309,39 @@ class IngestFileRequest(BaseModel):
         None, gt=0,
         description="Equipment ID to link the ingested chunks to.",
     )
+    titre: str | None = Field(
+        None, min_length=1, max_length=255,
+        description="Document title. Auto-derived from the filename if omitted.",
+    )
     source_type: str | None = Field(
         None,
-        description='Override source type (e.g. "document").  '
+        description='Override type_fichier (e.g. "PDF", "TXT").  '
                     "Auto-detected from file extension if omitted.",
     )
-    chunk_size: int = Field(
-        500, ge=100, le=5000,
-        description="Maximum chunk size in characters.",
+    version: str = Field(
+        "1.0", max_length=255,
+        description="Document version.",
     )
-    chunk_overlap: int = Field(
-        50, ge=0, le=500,
-        description="Overlap between consecutive chunks.",
+    description: str | None = Field(
+        None,
+        description="Optional document description.",
+    )
+    chunk_size: int | None = Field(
+        None, ge=100, le=5000,
+        description="Maximum chunk size in characters. Defaults to 3000 for structured formats (CSV/JSON/XLSX), 500 otherwise.",
+    )
+    chunk_overlap: int | None = Field(
+        None, ge=0, le=500,
+        description="Overlap between consecutive chunks. Defaults to 0 for structured formats (CSV/JSON/XLSX), 50 otherwise.",
     )
 
 
 class IngestDatabaseRequest(BaseModel):
     """Ingest data from a MySQL table or custom query.
+
+    Note: ``id_equipement`` is intentionally not accepted here — a
+    database ingest is never linked to a single equipment, so
+    ``documents.id_equipement`` stays NULL.
 
     Example::
 
@@ -334,8 +350,7 @@ class IngestDatabaseRequest(BaseModel):
             "database": "gmao",
             "user": "root",
             "password": "***",
-            "table": "interventions",
-            "id_equipement": 42
+            "table": "interventions"
         }
     """
 
@@ -350,17 +365,30 @@ class IngestDatabaseRequest(BaseModel):
         None,
         description="Custom SQL query (overrides table if provided).",
     )
-    id_equipement: int | None = Field(
-        None, gt=0,
-        description="Equipment ID to link the ingested chunks to.",
+    titre: str | None = Field(
+        None, min_length=1, max_length=255,
+        description="Document title. Auto-derived from the source name if omitted.",
     )
-    chunk_size: int = Field(
-        500, ge=100, le=5000,
-        description="Maximum chunk size in characters.",
+    source_type: str | None = Field(
+        None,
+        description='Override type_fichier (e.g. "PDF", "TXT").  '
+                    "Auto-detected if omitted.",
     )
-    chunk_overlap: int = Field(
-        50, ge=0, le=500,
-        description="Overlap between consecutive chunks.",
+    version: str = Field(
+        "1.0", max_length=255,
+        description="Document version.",
+    )
+    description: str | None = Field(
+        None,
+        description="Optional document description.",
+    )
+    chunk_size: int | None = Field(
+        None, ge=100, le=5000,
+        description="Maximum chunk size in characters. Defaults to 3000 for structured formats (CSV/JSON/XLSX), 500 otherwise.",
+    )
+    chunk_overlap: int | None = Field(
+        None, ge=0, le=500,
+        description="Overlap between consecutive chunks. Defaults to 0 for structured formats (CSV/JSON/XLSX), 50 otherwise.",
     )
 
 
@@ -379,13 +407,30 @@ class IngestMultipleRequest(BaseModel):
         None, gt=0,
         description="Equipment ID to link all ingested chunks to.",
     )
-    chunk_size: int = Field(
-        500, ge=100, le=5000,
-        description="Maximum chunk size in characters.",
+    titre: str | None = Field(
+        None, min_length=1, max_length=255,
+        description="Document title. Auto-derived from the file path if omitted.",
     )
-    chunk_overlap: int = Field(
-        50, ge=0, le=500,
-        description="Overlap between consecutive chunks.",
+    source_type: str | None = Field(
+        None,
+        description='Override type_fichier (e.g. "PDF", "TXT").  '
+                    "Auto-detected from file extension if omitted.",
+    )
+    version: str = Field(
+        "1.0", max_length=255,
+        description="Document version.",
+    )
+    description: str | None = Field(
+        None,
+        description="Optional document description.",
+    )
+    chunk_size: int | None = Field(
+        None, ge=100, le=5000,
+        description="Maximum chunk size in characters. Defaults to 3000 for structured formats (CSV/JSON/XLSX), 500 otherwise.",
+    )
+    chunk_overlap: int | None = Field(
+        None, ge=0, le=500,
+        description="Overlap between consecutive chunks. Defaults to 0 for structured formats (CSV/JSON/XLSX), 50 otherwise.",
     )
 
 
@@ -438,6 +483,9 @@ class DocumentSummary(BaseModel):
     id: int = Field(..., description="Document ID.")
     name: str = Field(..., description="Document name (filename).")
     source_type: str = Field(..., description='Source type ("document", "panne", …).')
+    id_equipement: int | None = Field(
+        None, description="Linked equipment ID (NULL if not linked).",
+    )
     chunks_count: int = Field(..., ge=0, description="Number of indexed chunks.")
     indexed: bool = Field(..., description="Whether the document is fully indexed in Qdrant.")
 
@@ -481,6 +529,8 @@ class HealthResponse(BaseModel):
 
     Each backend reports ``"ok"`` or an error message.  The overall
     ``status`` is ``"healthy"`` only when all backends are reachable.
+    ``models`` reports the warmup state of each ML layer
+    (``"ready"``, ``"disabled"``, ``"skipped"`` or an error message).
     """
 
     status: str = Field(
@@ -490,6 +540,14 @@ class HealthResponse(BaseModel):
     qdrant: str = Field(..., description='"ok" or error message.')
     mysql: str = Field(..., description='"ok" or error message.')
     version: str = Field("0.1.0", description="API version.")
+    models: dict[str, str] = Field(
+        default_factory=dict,
+        description="Warmup status per ML layer (ready/disabled/skipped/error).",
+    )
+    warmup_ms: dict[str, float] = Field(
+        default_factory=dict,
+        description="Model load duration per ML layer, in milliseconds.",
+    )
 
 
 class StrategyListResponse(BaseModel):

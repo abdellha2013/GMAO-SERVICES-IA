@@ -62,6 +62,24 @@ class RerankerOrchestrator:
     def strategy_name(self) -> str:
         return self._strategy_name
 
+    def warmup(self) -> str:
+        """Précharge le modèle de reranking résolu (idempotent, cache de classe).
+
+        Appelé au démarrage pour que le premier reranking n'inclue pas le
+        chargement du modèle Cross-Encoder.
+
+        Returns
+        -------
+        str
+            Le nom de la stratégie préchargée.
+        """
+        strategy_cls = self._registry.get(self._strategy_name)
+        strategy: RerankerStrategy = strategy_cls(**self._strategy_options)
+        preload = getattr(strategy, "preload", None)
+        if callable(preload):
+            preload()
+        return strategy.name
+
     def rerank(
         self,
         query: str,

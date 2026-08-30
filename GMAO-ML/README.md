@@ -58,8 +58,15 @@ et publie le meilleur modèle dans `GMAO-ML/artifacts/<model_name>/`.
 ## API de prédiction
 
 ```bash
+# Accès local (machine hôte uniquement)
 uv run --env-file GMAO-ML/.env uvicorn gmao_ml.api.main:app --host 127.0.0.1 --port 8100
+
+# Accès réseau local (accessible depuis les autres machines du réseau)
+uv run --env-file GMAO-ML/.env uvicorn gmao_ml.api.main:app --host 0.0.0.0 --port 8100
 ```
+
+Pour trouver l'IP locale de la machine : `hostname -I` (ex. `10.96.93.45`).
+Les autres machines accèdent alors via `http://10.96.93.45:8100/`.
 
 | Endpoint                  | Auth Bearer | Description                          |
 |---------------------------|-------------|--------------------------------------|

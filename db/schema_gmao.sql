@@ -1,18 +1,18 @@
 -- ============================================================
 -- GMAO — Schéma complet MySQL compatible Laravel
 -- Source : migrations Laravel (jingerkarmaF12)
--- Base   : gmao_rag
+-- Base   : gmao
 --
 -- Usage :
---   mysql -u root -p gmao_rag < db/schema_gmao.sql
+--   mysql -u root -p gmao < db/schema_gmao.sql
 --   ou via phpMyAdmin / MySQL Workbench
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS gmao_rag
+CREATE DATABASE IF NOT EXISTS gmao
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 
-USE gmao_rag;
+USE gmao;
 
 -- ============================================================
 -- NETTOYAGE (ordre pour respecter les FK)
@@ -223,7 +223,7 @@ CREATE TABLE documents (
     id_document INT UNSIGNED AUTO_INCREMENT,
     titre VARCHAR(255) NOT NULL,
     nom_fichier VARCHAR(255) NOT NULL,
-    type_fichier VARCHAR(255) NOT NULL,
+    type_fichier VARCHAR(255) NULL,
     chemin_fichier VARCHAR(255) NOT NULL,
     taille BIGINT UNSIGNED NOT NULL,
     version VARCHAR(255) NOT NULL DEFAULT '1.0',

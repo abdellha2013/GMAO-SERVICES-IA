@@ -13,7 +13,12 @@ from __future__ import annotations
 import re
 from urllib.parse import urlparse
 
-__all__ = ["validate_qr_url", "EQUIPEMENT_URL_RE", "extract_id_from_url"]
+__all__ = [
+    "validate_qr_url",
+    "validate_qr_url_reason",
+    "EQUIPEMENT_URL_RE",
+    "extract_id_from_url",
+]
 
 # /api/equipements/{id} — id numérique, slash final optionnel.
 EQUIPEMENT_URL_RE = re.compile(r"^https?://(?P<host>[^/\s]+)/api/equipements/(?P<id>\d+)/?$")
@@ -69,3 +74,28 @@ def validate_qr_url(raw: str, allowed_hosts: list[str] | None = None) -> int | N
     if not host_matches_allowed(raw, allowed_hosts or []):
         return None
     return equipement_id
+
+
+def validate_qr_url_reason(
+    raw: str,
+    allowed_hosts: list[str] | None = None,
+) -> tuple[int | None, str | None]:
+    """Comme :func:`validate_qr_url`, mais fournit aussi un motif de rejet.
+
+    Returns
+    -------
+    (id_equipement, raison | None)
+        - ``(id, None)`` si l'URL est conforme ;
+        - ``(None, "URL non reconnue")`` si le chemin ne correspond pas ;
+        - ``(None, "Domaine non autorisé")`` si le chemin est bon mais que
+          l'hôte ne figure pas dans la liste autorisée.
+    """
+
+    if not raw or not isinstance(raw, str):
+        return None, "URL non reconnue"
+    equipement_id = extract_id_from_url(raw)
+    if equipement_id is None:
+        return None, "URL non reconnue"
+    if not host_matches_allowed(raw, allowed_hosts or []):
+        return None, "Domaine non autorisé"
+    return equipement_id, None

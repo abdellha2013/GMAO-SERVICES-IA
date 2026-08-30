@@ -104,6 +104,31 @@ class RetrievalOrchestrator:
         self.score_threshold = score_threshold
         self.options = dict(strategy_options)
 
+    def warmup(self) -> str:
+        """Précharge le modèle d'encodage des requêtes (idempotent).
+
+        Le modèle de requête est le même que celui de l'indexation
+        (cache de classe), donc cette méthode ne fait qu'activer le
+        chargement au démarrage au lieu du premier ``retrieve``.
+
+        Returns
+        -------
+        str
+            Le nom de la stratégie d'embedding préchargée.
+        """
+        encoder_cls = self.embedding_registry.get(
+            self.embedding_strategy_name
+        )
+        encoder = encoder_cls(**self.embedding_options)
+        preload = getattr(encoder, "preload", None)
+        if callable(preload):
+            preload()
+            return self.embedding_strategy_name
+        embed_query = getattr(encoder, "embed_query", None)
+        if callable(embed_query):
+            embed_query("warmup query")
+        return self.embedding_strategy_name
+
     def retrieve(
         self,
         query: str,

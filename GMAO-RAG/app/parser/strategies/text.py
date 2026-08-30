@@ -53,7 +53,7 @@ class TextParser(BaseParserStrategy):
     >>> parser.name
     'text'
     """
-    SUPPORTED_SOURCE_TYPES = frozenset({"txt"})
+    SUPPORTED_SOURCE_TYPES = frozenset({"txt", "pdf", "docx"})
 
     @property
     def name(self) -> str:

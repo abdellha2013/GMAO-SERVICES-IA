@@ -44,6 +44,25 @@ class EmbeddingOrchestrator:
     def strategy_name(self) -> str:
         return self._strategy_name
 
+    def warmup(self) -> str:
+        """Précharge le modèle d'embedding résolu (aucune donnée encodée).
+
+        Idempotent : les stratégies mettent le modèle en cache de classe.
+        Appelé au démarrage pour que la première question ne subisse pas
+        le chargement du modèle.
+
+        Returns
+        -------
+        str
+            Le nom de la stratégie préchargée.
+        """
+        strategy_cls = self._registry.get(self._strategy_name)
+        strategy = strategy_cls(**self._strategy_options)
+        preload = getattr(strategy, "preload", None)
+        if callable(preload):
+            preload()
+        return strategy.name
+
     @staticmethod
     def _validate_chunks(chunks: Sequence[Chunk]) -> None:
         if not isinstance(chunks, Sequence) or isinstance(chunks, (str, bytes)):

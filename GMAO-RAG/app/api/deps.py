@@ -10,7 +10,12 @@ created during the ``lifespan`` event.
 """
 from __future__ import annotations
 
+import logging
+import os
+import time
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from app.chunker import build_default_orchestrator as build_chunker_orchestrator
 from app.data_sources import DataSourceOrchestrator
@@ -51,6 +56,9 @@ class _Container:
     chunker: ChunkerOrchestrator | None = None
     embedding: EmbeddingOrchestrator | None = None
     storage: StorageOrchestrator | None = None
+    # Warmup state: per-layer status ("ready"/"disabled"/erreur) and load ms.
+    warmup: dict[str, str] = {}
+    warmup_ms: dict[str, float] = {}
 
 
 _container = _Container()
@@ -87,6 +95,68 @@ def dispose_all_orchestrators() -> None:
     """Reset the container (called at shutdown or in tests)."""
     for attr in vars(_container):
         setattr(_container, attr, None)
+
+
+def warmup_all_orchestrators(*, force: bool = False) -> dict[str, str]:
+    """Preload the ML models so every request is warm from the first call.
+
+    Models are cached at class level by the strategies (embedding, reranker,
+    LLM client), but without this step they load lazily on the *first*
+    request — which forces the user to wait for a multi-GB download/parse
+    before getting an answer.  Calling this at startup moves that cost to
+    boot time and keeps the models resident.
+
+    Non-fatal: a failing layer is recorded (e.g. missing LLM API key) and
+    does not prevent startup — the layer then degrades at request time.
+
+    The warmup is skipped unless ``RAG_WARMUP_MODELS`` is truthy
+    (default: enabled) or ``force=True`` — tests disable it to stay offline.
+
+    Returns
+    -------
+    dict[str, str]
+        Per-layer status: ``"ready"``, ``"disabled"``, ``"skipped"``, or
+        ``"error: <message>"``.
+    """
+    enabled = force or os.getenv("RAG_WARMUP_MODELS", "1").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+
+    layers = [
+        ("retrieval", _container.retrieval),
+        ("reranker", _container.reranker),
+        ("llm", _container.llm),
+        ("embedding", _container.embedding),
+    ]
+
+    result: dict[str, str] = {}
+    for name, orchestrator in layers:
+        if orchestrator is None:
+            result[name] = "skipped"
+            continue
+        if not enabled:
+            result[name] = "disabled"
+            continue
+
+        start = time.perf_counter()
+        try:
+            target = getattr(orchestrator, "warmup", None)
+            if callable(target):
+                target()
+            result[name] = "ready"
+        except Exception as exc:  # noqa: BLE001 - warmup must never block startup
+            result[name] = f"error: {exc}"
+            logger.warning("Warmup failed for layer '%s': %s", name, exc)
+        _container.warmup_ms[name] = round((time.perf_counter() - start) * 1000, 1)
+
+    _container.warmup = result
+    logger.info("Model warmup: %s", result)
+    return result
+
+
+def get_warmup_status() -> tuple[dict[str, str], dict[str, float]]:
+    """Return (per-layer status, per-layer load ms) from the startup warmup."""
+    return dict(_container.warmup or {}), dict(_container.warmup_ms or {})
 
 
 # =====================================================================

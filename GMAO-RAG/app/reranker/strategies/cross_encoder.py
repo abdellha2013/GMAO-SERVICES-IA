@@ -130,6 +130,14 @@ class CrossEncoderReranker(RerankerStrategy):
             cls._model_cache.clear()
             cls._key_locks.clear()
 
+    def preload(self) -> Any:
+        """Charge le Cross-Encoder en mémoire si ce n'est pas déjà fait.
+
+        Idempotent (cache de classe). Appelé au démarrage pour que le
+        reranking ne subisse pas le temps de chargement du premier appel.
+        """
+        return self._get_model()
+
     def supports(self, query: str, candidates: Sequence[RetrievedChunk]) -> bool:
         return (
             isinstance(query, str)

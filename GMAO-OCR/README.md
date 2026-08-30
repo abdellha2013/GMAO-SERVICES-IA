@@ -27,7 +27,9 @@ nécessite **CairoSVG** (dépendance du projet).
 ## Interface web de visualisation
 
 Une interface HTML/CSS/JS est servie par le service lui-même :
-**`http://127.0.0.1:8400/`**. Elle permet de :
+**`http://127.0.0.1:8400/`** (depuis la même machine) ou
+**`http://<IP_LAN>:8400/`** (depuis une autre machine du réseau local). Elle
+permet de :
 
 - glisser-déposer / choisir un fichier SVG, PNG, EPS ou JPEG ;
 - visualiser l'aperçu original et le **PNG rasterisé** (travail de
@@ -55,8 +57,16 @@ Swagger interactif : `http://127.0.0.1:8400/docs`.
 # Installer le décodeur (voir ci-dessous pour les dépendances système)
 uv sync
 
+# Accès local (machine hôte uniquement)
 uv run --env-file GMAO-OCR/.env uvicorn gmao_ocr.api.main:app --host 127.0.0.1 --port 8400
+
+# Accès réseau local (accessible depuis les autres machines du réseau)
+uv run --env-file GMAO-OCR/.env uvicorn gmao_ocr.api.main:app --host 0.0.0.0 --port 8400
 ```
+
+Pour trouver l'IP locale de la machine : `hostname -I` (ex. `10.96.93.45`).
+Les autres machines accèdent alors via `http://10.96.93.45:8400/`. Aucun
+pare-feu à ouvrir si `ufw` est inactif.
 
 Ensuite :
 

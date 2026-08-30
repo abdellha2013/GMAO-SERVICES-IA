@@ -23,9 +23,17 @@ uv run python GMAO-ANALYTICS/scripts/seed_maintenance.py \
     --db "mysql+pymysql://root:PASS@127.0.0.1:3306/gmao_rag" --months 12 --seed 7 --reset
 
 # 2. Lancer le service
+#    Accès local (machine hôte uniquement)
 uv run --env-file GMAO-ANALYTICS/.env uvicorn gmao_analytics.api.main:app \
     --host 127.0.0.1 --port 8300
+
+#    Accès réseau local (accessible depuis les autres machines du réseau)
+uv run --env-file GMAO-ANALYTICS/.env uvicorn gmao_analytics.api.main:app \
+    --host 0.0.0.0 --port 8300
 ```
+
+Pour trouver l'IP locale de la machine : `hostname -I` (ex. `10.96.93.45`).
+Les autres machines accèdent alors via `http://10.96.93.45:8300/`.
 
 Ouvrir `http://127.0.0.1:8300/docs` pour la documentation Swagger.
 

@@ -13,13 +13,27 @@ from __future__ import annotations
 import logging
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
-from app.api.deps import create_all_orchestrators, dispose_all_orchestrators
+# Load GMAO-RAG/.env regardless of the process working directory
+# (uvicorn is often started from the repository root).  Must run before
+# importing app modules that read the environment at import time.
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+load_dotenv(_ENV_FILE)
+
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+from app.api.deps import (
+    create_all_orchestrators,
+    dispose_all_orchestrators,
+    warmup_all_orchestrators,
+)
 from app.api.v1.rag import router as rag_router
 from app.api.v1.ingest import router as ingest_router
 from app.api.v1.documents import router as documents_router
@@ -51,6 +65,13 @@ async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
     logger.info("Starting GMAO-RAG API -- creating orchestrators...")
     create_all_orchestrators()
     logger.info("All orchestrators ready.")
+
+    # Preload the ML models at boot so that the first question does not
+    # wait for a multi-GB model download/parse (they stay resident).
+    t_warmup = time.perf_counter()
+    statuses = warmup_all_orchestrators()
+    logger.info("Models kept active at startup in %.1fs -> %s",
+                time.perf_counter() - t_warmup, statuses)
     yield
     logger.info("Shutting down GMAO-RAG API -- disposing orchestrators...")
     dispose_all_orchestrators()
@@ -130,3 +151,15 @@ app.include_router(rag_router, prefix="/api/v1")
 app.include_router(ingest_router, prefix="/api/v1")
 app.include_router(documents_router, prefix="/api/v1")
 app.include_router(health_router, prefix="/api/v1")
+
+
+# --- Web console (static/) served at the root ---
+# Same behaviour as GMAO-OCR: hitting http://<host>:<port>/ opens the
+# graphical interface instead of returning {"detail":"Not Found"}.
+_WEB_DIR = Path(__file__).resolve().parents[2] / "static"
+if _WEB_DIR.exists():
+    app.mount("/static", StaticFiles(directory=_WEB_DIR), name="static")
+
+    @app.get("/", include_in_schema=False)
+    async def index() -> FileResponse:
+        return FileResponse(_WEB_DIR / "index.html")

@@ -32,6 +32,17 @@ uv run uvicorn scripts.mock_laravel:app --app-dir GMAO-API --port 9000
 uv run --env-file GMAO-API/.env uvicorn gmao_api.api.main:app --port 8200
 ```
 
+> Sans `--host`, uvicorn écoute par défaut sur `127.0.0.1` (accès machine hôte
+> uniquement). Pour rendre le service accessible aux autres machines du réseau,
+> ajouter `--host 0.0.0.0` (ex. GMAO-API) :
+>
+> ```bash
+> uv run --env-file GMAO-API/.env uvicorn gmao_api.api.main:app --host 0.0.0.0 --port 8200
+> ```
+>
+> Trouver l'IP locale avec `hostname -I` (ex. `10.96.93.45`) ; les autres
+> machines accèdent alors via `http://10.96.93.45:8200/`.
+
 Configuration via `GMAO-API/.env` (voir `.env.example`) :
 `SIMULATE_LARAVEL=true` active le mode simulation (aucun appel HTTP, alertes loggées).
 

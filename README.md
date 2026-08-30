@@ -27,6 +27,17 @@ uv run --env-file GMAO-ANALYTICS/.env uvicorn gmao_analytics.api.main:app --port
 uv run --env-file GMAO-OCR/.env uvicorn gmao_ocr.api.main:app --port 8400
 ```
 
+> Sans `--host`, uvicorn écoute par défaut sur `127.0.0.1` (accès machine hôte
+> uniquement). Pour rendre un service accessible aux autres machines du réseau
+> (accès **local** via l'IP de la machine), ajouter `--host 0.0.0.0`, par ex. :
+>
+> ```bash
+> uv run --env-file GMAO-ML/.env uvicorn gmao_ml.api.main:app --host 0.0.0.0 --port 8100
+> ```
+>
+> Trouver l'IP locale avec `hostname -I` (ex. `10.96.93.45`) ; les autres
+> machines accèdent alors via `http://10.96.93.45:8100/`.
+
 > **GMAO-ANALYTICS** : préalablement peupler les tables de maintenance MySQL
 > (`pannes`, `ordre_travails`), par ex. :
 > `uv run python GMAO-ANALYTICS/scripts/seed_maintenance.py --db "mysql+pymysql://root:PASS@127.0.0.1:3306/gmao_rag" --reset`

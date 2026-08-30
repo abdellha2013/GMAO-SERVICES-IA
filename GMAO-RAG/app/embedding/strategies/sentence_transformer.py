@@ -182,6 +182,16 @@ class SentenceTransformerEmbedding(EmbeddingStrategy):
             self._model_cache[key] = model
             return model
 
+    def preload(self) -> Any:
+        """Charge le modèle en mémoire si ce n'est pas déjà fait.
+
+        Idempotent : le modèle est mis en cache au niveau de la classe,
+        donc un appel ultérieur renvoie la même instance sans recharger.
+        Appelé au démarrage du service pour que les questions soient
+        traitées sans attendre le chargement du modèle.
+        """
+        return self._get_model()
+
     @staticmethod
     def _resolve_dimension(model: Any) -> int:
         try:

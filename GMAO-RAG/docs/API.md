@@ -70,42 +70,33 @@ tout le pipeline en HTTP :
 
 ### Schema de la base de donnees (endpoints documents)
 
+Le schema effectif (`gmao`, MySQL) stocke le contenu des chunks
+directement dans `document_chunks` : pas de table de jonction ni de
+`chunk_rag`. Le statut `indexed` est **derive de la presence des points
+Qdrant** (id du point == `id_chunk`), il n'y a pas de colonne
+`statut_indexation`.
+
 ```text
-+------------------+     +------------------+     +------------------+
-|    document       |     |  document_chunk   |     |    chunk_rag      |
-|------------------|     |------------------|     |------------------|
-| id_document (PK) |<----| id_document (FK)  |     | id_chunk (PK)    |
-| titre            |     | id_chunk (FK)     |---->| contenu           |
-| nom_fichier      |     +------------------+     | ordre_chunk      |
-| type_fichier     |                              | nombre_tokens    |
-| chemin_fichier   |     +------------------+     | type_source      |
-| taille           |     |   panne_chunk     |     | statut_embedding |
-| version          |     |------------------|     | date_indexation  |
-| date_importation |     | id_chunk (FK)     |---->+                  |
-| statut_indexation|     | id_panne (FK)     |     +------------------+
-| description      |     +------------------+
-| id_equipement    |              |
-+------------------+     +-------+----------+
-                          |     panne         |
-                          |------------------|
-                          | id_panne (PK)    |
-                          | titre            |
-                          | description      |
-                          | gravite          |
-                          | date_detection   |
-                          | cause            |
-                          | solution         |
-                          | symptomes        |
-                          | statut_indexation|
-                          | id_equipement    |
-                          | id_ot            |
-                          +------------------+
++------------------+     +-----------------------+
+|    documents      |     |    document_chunks     |
+|------------------|     |-----------------------|
+| id_document (PK) |<----| id_document (FK)       |
+| titre            |     | id_chunk (PK)          |
+| nom_fichier      |     | contenu                |
+| type_fichier      |     | ordre_chunk            |
+| chemin_fichier   |     | nombre_tokens          |
+| taille           |     +-----------------------+
+| version          |
+| description      |
+| id_equipement    |      Qdrant : point.id == document_chunks.id_chunk
++------------------+      payload { id_chunk, id_document, id_equipement,
+                                  type_source }
 ```
 
-> **Piege connu** : `chunk_rag` n'a PAS de colonnes `id_document`,
-> `id_panne`, `score`, `rank_position`, `source_name` ni
-> `retrieval_strategy`. L'association chunk<->document se fait via la
-> table de jonction `document_chunk` (ou `panne_chunk` pour les pannes).
+> **Piege connu** : `type_fichier` et `id_equipement` sont NULLables. Une
+> source base de donnees (`/ingest/database`) stocke toujours
+> `type_fichier = NULL` et `id_equipement = NULL` (le champ
+> `id_equipement` n'est pas accepte sur cet endpoint).
 
 ---
 
@@ -142,6 +133,12 @@ PYTHONPATH=. .venv/bin/python -m uvicorn app.api.main:app \
 | `QDRANT_HOST` | Non | `localhost` | Host Qdrant |
 | `QDRANT_PORT` | Non | `6333` | Port Qdrant |
 | `QDRANT_COLLECTION_NAME` | Non | `gmao_chunks` | Nom de la collection Qdrant |
+| `RAG_WARMUP_MODELS` | Non | `1` | Precharge les modeles ML au demarrage pour garder les reponses rapides (`0` = chargement paresseux au 1er appel) |
+
+---
+
+Le changelog des modeles precharges (`models` + `warmup_ms`) est visible sur
+`GET /api/v1/health` (cf. section 7.1).
 
 ---
 
@@ -283,11 +280,15 @@ CHUNKS=$(curl -s http://localhost:8000/api/v1/rag/retrieve \
   -H "Content-Type: application/json" \
   -d '{"query": "pompe vibration", "top_k": 5}')
 
+# Le endpoint attend la liste des candidats (champ "results" uniquement),
+# pas l'objet de reponse complet.
+CANDIDATES=$(echo "$CHUNKS" | jq -c '.results')
+
 # Puis les reranker
 curl -s http://localhost:8000/api/v1/rag/rerank \
   -H "Authorization: Bearer $RAG_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{\"query\": \"pompe vibration\", \"candidates\": $CHUNKS, \"top_k\": 3}"
+  -d "{\"query\": \"pompe vibration\", \"candidates\": $CANDIDATES, \"top_k\": 3}"
 ```
 
 #### Erreurs
@@ -419,12 +420,21 @@ par le pipeline complet : load -> parse -> chunk -> embed -> stocker.
 
 #### Champs du formulaire
 
+Toutes les colonnes modifiables de la table `documents` (`titre`,
+`nom_fichier`, `type_fichier`, `chemin_fichier`, `taille`, `version`,
+`description`, `id_equipement`) sont renseignables. `nom_fichier`,
+`chemin_fichier` et `taille` sont derives automatiquement du fichier.
+
 | Champ | Type | Requis | Defaut | Description |
 |---|---|---|---|---|
 | `file` | file | Oui | — | Fichier a ingérer (PDF, DOCX, TXT, HTML, CSV, JSON, XLSX, MD) |
-| `id_equipement` | int | Non | `null` | ID equipement parent |
-| `chunk_size` | int | Non | `500` | Taille max des chunks (100-5000) |
-| `chunk_overlap` | int | Non | `50` | Chevauchement entre chunks (0-500) |
+| `titre` | string | Non | nom du fichier sans extension | Colonne `documents.titre` (max 255) |
+| `source_type` | string | Non | detecte via l'extension | Colonne `documents.type_fichier`, ex. `"PDF"`, `"TXT"` |
+| `version` | string | Non | `"1.0"` | Colonne `documents.version` (max 255) |
+| `description` | string | Non | `null` | Colonne `documents.description` |
+| `id_equipement` | int | Non | `null` | Colonne `documents.id_equipement` (FK, `>0`) |
+| `chunk_size` | int | Non | `3000` (CSV/JSON/XLSX), `500` sinon | Taille max des chunks (100-5000) |
+| `chunk_overlap` | int | Non | `0` (CSV/JSON/XLSX), `50` sinon | Chevauchement entre chunks (0-500) |
 
 #### Reponse `200`
 
@@ -452,6 +462,10 @@ par le pipeline complet : load -> parse -> chunk -> embed -> stocker.
 curl -s http://localhost:8000/api/v1/ingest/file \
   -H "Authorization: Bearer $RAG_API_KEY" \
   -F "file=@mon_fichier.txt" \
+  -F "titre=Pompe PC-12 - manuel" \
+  -F "source_type=TXT" \
+  -F "version=2.1" \
+  -F "description=Manuel de maintenance de la pompe centrifuge PC-12." \
   -F "id_equipement=42" \
   -F "chunk_size=300"
 ```
@@ -487,9 +501,24 @@ Ingestion depuis une table MySQL ou une requete SQL custom.
 | `password` | string | Oui | `min_length=0` | Mot de passe |
 | `table` | string | Oui | `min_length=1` | Table source |
 | `query` | string | Non | — | SQL custom (remplace `table` si fourni) |
-| `id_equipement` | int | Non | `gt=0` | ID equipement parent |
-| `chunk_size` | int | Non | `ge=100, le=5000` | Taille max chunks (defaut: 500) |
-| `chunk_overlap` | int | Non | `ge=0, le=500` | Chevauchement (defaut: 50) |
+| `titre` | string | Non | nom du document source | Colonne `documents.titre` (max 255) |
+| `source_type` | string | Non | `null` pour une source DB | Colonne `documents.type_fichier`. Pas d'extension pour une base de donnees → `NULL` si absent (ex. `"MYSQL"`) |
+| `version` | string | Non | `"1.0"` | Colonne `documents.version` (max 255) |
+| `description` | string | Non | `null` | Colonne `documents.description` |
+| `chunk_size` | int | Non | `3000` (CSV/JSON/XLSX), `500` sinon | Taille max chunks (100-5000) |
+| `chunk_overlap` | int | Non | `0` (CSV/JSON/XLSX), `50` sinon | Chevauchement (0-500) |
+
+> **`id_equipement`** n'est pas accepte sur cet endpoint : une ingestion
+> depuis une base de donnees n'est jamais liee a un equipement unique,
+> donc `documents.id_equipement` reste **`NULL`** (champ envoye = ignore).
+
+> **Re-ingestion (upsert)** : l'identite du document est
+> `database.table` (stockee dans `documents.chemin_fichier`). Si un
+> document avec cette identite existe deja, il est **supprime**
+> (chunks MySQL + points Qdrant) avant la nouvelle ingestion, et la
+> version `documents.version` est **incremente** (`1.0` -> `2.0`,
+> `3` -> `4`). `titre` par defaut = `database.table` ; `type_fichier`
+> reste `NULL` si `source_type` absent (pas d'extension pour une base).
 
 #### Exemple curl
 
@@ -503,8 +532,7 @@ curl -s http://localhost:8000/api/v1/ingest/database \
     "database": "gmao",
     "user": "root",
     "password": "",
-    "table": "pannes",
-    "id_equipement": 1
+    "table": "pannes"
   }'
 
 # Avec requete SQL custom
@@ -517,8 +545,7 @@ curl -s http://localhost:8000/api/v1/ingest/database \
     "user": "root",
     "password": "",
     "table": "pannes",
-    "query": "SELECT * FROM pannes LIMIT 10",
-    "id_equipement": 1
+    "query": "SELECT * FROM pannes LIMIT 10"
   }'
 ```
 
@@ -537,9 +564,13 @@ une erreur sur un fichier n'empeche pas les autres.
 | Champ | Type | Requis | Contrainte | Description |
 |---|---|---|---|---|
 | `paths` | list[str] | Oui | `min_length=1` | Chemins absolus des fichiers sur le serveur |
+| `titre` | string | Non | max 255 | Colonne `documents.titre` (nom du fichier si absent) |
+| `source_type` | string | Non | — | Colonne `documents.type_fichier`, ex. `"PDF"` |
+| `version` | string | Non | `"1.0"` | Colonne `documents.version` (max 255) |
+| `description` | string | Non | `null` | Colonne `documents.description` |
 | `id_equipement` | int | Non | `gt=0` | ID equipement parent |
-| `chunk_size` | int | Non | `ge=100, le=5000` | Taille max chunks |
-| `chunk_overlap` | int | Non | `ge=0, le=500` | Chevauchement |
+| `chunk_size` | int | Non | `3000` (CSV/JSON/XLSX), `500` sinon | Taille max chunks (100-5000) |
+| `chunk_overlap` | int | Non | `0` (CSV/JSON/XLSX), `50` sinon | Chevauchement (0-500) |
 
 #### Reponse `200`
 
@@ -595,7 +626,9 @@ Ils fournissent la gestion des documents indexes.
 ### 6.1 GET `/api/v1/documents/` — Liste des documents
 
 Retourne tous les documents avec leur nombre de chunks.
-Le champ `indexed` est derive de `statut_indexation = 'Indexe'`.
+Le champ `indexed` est derive de la presence des chunks du document dans
+Qdrant (id du point == `id_chunk`). `id_equipement` vaut `null` quand le
+document n'est lie a aucun equipement (cas des ingestions base de donnees).
 
 **Auth** : requise
 
@@ -608,11 +641,20 @@ Le champ `indexed` est derive de `statut_indexation = 'Indexe'`.
       "id": 1,
       "name": "sample-5pages.docx",
       "source_type": "DOCX",
+      "id_equipement": 42,
       "chunks_count": 19,
       "indexed": false
+    },
+    {
+      "id": 29,
+      "name": "mysql://root@127.0.0.1:3306/gmao",
+      "source_type": "document",
+      "id_equipement": null,
+      "chunks_count": 34,
+      "indexed": true
     }
   ],
-  "total": 1
+  "total": 2
 }
 ```
 
@@ -628,7 +670,7 @@ curl -s http://localhost:8000/api/v1/documents/ \
 ### 6.2 GET `/api/v1/documents/{document_id}` — Detail document
 
 Retourne les metadonnees du document et tous ses chunks
-(via la table de jonction `document_chunk`).
+(depuis `document_chunks`, contenu stocke en direct).
 
 **Auth** : requise
 
@@ -640,6 +682,7 @@ Retourne les metadonnees du document et tous ses chunks
     "id": 1,
     "name": "sample-5pages.docx",
     "source_type": "DOCX",
+    "id_equipement": 42,
     "chunks_count": 19,
     "indexed": false
   },
@@ -653,7 +696,7 @@ Retourne les metadonnees du document et tous ses chunks
       "source_type": "Document",
       "id_document": 1,
       "id_panne": null,
-      "id_equipement": null,
+      "id_equipement": 42,
       "retrieval_strategy": ""
     }
   ]
@@ -672,9 +715,13 @@ Retourne les metadonnees du document et tous ses chunks
 ### 6.3 DELETE `/api/v1/documents/{document_id}` — Supprimer document
 
 Supprime un document et toutes ses donnees associees :
-- Lignes dans `document_chunk` (jonction)
-- Chunks dans `chunk_rag`
-- Enregistrement dans `document`
+- Lignes dans `document_chunks` (id_chunk in [id du document])
+- Points Qdrant correspondants (point.id == id_chunk)
+- Enregistrement dans `documents` (cascade sur les chunks restants)
+
+> Ce meme helper de suppression est utilise en interne par
+> `/ingest/database` pour la re-ingestion (upsert) : l'ancien document
+> est vide avant la re-insertion, puis `documents.version` est incremente.
 
 **Auth** : requise
 
@@ -719,7 +766,19 @@ Verifie la connectivite a Qdrant et MySQL. **Aucune authentification requise**
   "status": "healthy",
   "qdrant": "ok",
   "mysql": "ok",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "models": {
+    "retrieval": "ready",
+    "reranker": "ready",
+    "llm": "ready",
+    "embedding": "ready"
+  },
+  "warmup_ms": {
+    "retrieval": 8420.4,
+    "reranker": 6103.7,
+    "llm": 301.2,
+    "embedding": 8341.1
+  }
 }
 ```
 
@@ -727,6 +786,12 @@ Valeurs de `status` :
 - `"healthy"` : Qdrant et MySQL joignables
 - `"degraded"` : un seul backend joignable
 - `"unhealthy"` : aucun backend joignable
+
+Valeurs de `models` (etat du warmup de chaque couche ML au demarrage) :
+- `"ready"` : modele precharge en memoire (actif, reponses rapides)
+- `"disabled"` : warmup desactive (var `RAG_WARMUP_MODELS=0`), chargement paresseux au 1er appel
+- `"skipped"` : orchestrateur non initialise
+- `"error: <msg>"` : echec de chargement non fatal (ex. cle API LLM absente)
 
 #### Exemple curl
 
@@ -883,8 +948,9 @@ avec une logique AND.
 | `id` | int | ID du document |
 | `name` | string | Nom du fichier |
 | `source_type` | string | Type de fichier |
+| `id_equipement` | int \| null | ID equipement lie (`null` pour une source base de donnees) |
 | `chunks_count` | int | Nombre de chunks |
-| `indexed` | bool | `statut_indexation == 'Indexe'` |
+| `indexed` | bool | Tous les chunks presents dans Qdrant (`point.id == id_chunk`) |
 
 ---
 
@@ -951,24 +1017,23 @@ curl -L http://localhost:8000/api/v1/documents
 curl http://localhost:8000/api/v1/documents/    # avec /
 ```
 
-### 10.2 chunk_rag n'a pas de colonnes liees aux parents
+### 10.2 `document_chunks` stocke le contenu en direct
 
-La table `chunk_rag` ne contient que :
-`id_chunk`, `contenu`, `ordre_chunk`, `nombre_tokens`, `type_source`,
-`statut_embedding`, `date_indexation`.
+Dans le schema `gmao`, le contenu vit directement dans
+`document_chunks` : `id_chunk`, `contenu`, `ordre_chunk`,
+`nombre_tokens`, `id_document` (FK). Il n'y a **ni** table `chunk_rag`,
+**ni** table de jonction `document_chunk`/`panne_chunk`.
 
-Elle n'a **pas** `id_document`, `id_panne`, `score`, `rank_position`,
-`source_name` ni `retrieval_strategy`.
+Dans Qdrant, chaque point a `id == id_chunk` et porte en payload
+`{ id_chunk, id_document, id_equipement, type_source }`.
 
-L'association se fait via les tables de jonction :
-- `document_chunk(id_chunk, id_document)` pour les documents
-- `panne_chunk(id_chunk, id_panne)` pour les pannes
+### 10.3 `indexed` est derive de la presence Qdrant
 
-### 10.3 statut_indexation vs indexed
-
-La colonne MySQL est `statut_indexation` (enum : `En_attente`,
-`Indexe`, `Echec`). L'API la convertit en booleen `indexed` dans
-les reponses (`true` si `statut_indexation == 'Indexe'`).
+Il n'existe pas de colonne `statut_indexation` MySQL. L'API considere
+un document comme `indexed=true` quand **tous** ses `id_chunk` existent
+dans Qdrant (interrogation `retrieve` par liste d'ids). C'est aussi le
+mecanisme utilise par `/ingest/database` qui, lors d'une re-ingestion,
+supprime les anciens points Qdrant en meme temps que les lignes MySQL.
 
 ### 10.4 Mode dev (pas de RAG_API_KEY)
 

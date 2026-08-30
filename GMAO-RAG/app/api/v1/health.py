@@ -18,6 +18,7 @@ from app.api.deps import (
     get_llm_orchestrator,
     get_reranker_orchestrator,
     get_retrieval_orchestrator,
+    get_warmup_status,
 )
 from app.api.schemas import (
     HealthResponse,
@@ -130,6 +131,7 @@ async def health_check() -> HealthResponse:
     """
     qdrant_status = _check_qdrant()
     mysql_status = _check_mysql()
+    models_status, models_ms = get_warmup_status()
 
     if qdrant_status == "ok" and mysql_status == "ok":
         status = "healthy"
@@ -143,6 +145,8 @@ async def health_check() -> HealthResponse:
         qdrant=qdrant_status,
         mysql=mysql_status,
         version="0.1.0",
+        models=models_status,
+        warmup_ms=models_ms,
     )
 
 

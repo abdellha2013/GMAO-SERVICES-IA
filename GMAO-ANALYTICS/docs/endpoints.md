@@ -144,8 +144,13 @@ uv run python GMAO-ANALYTICS/scripts/seed_maintenance.py \
     --db "mysql+pymysql://root:PASS@127.0.0.1:3306/gmao_rag" --months 12 --seed 7 --reset
 
 # lancer le service
+# Accès local (machine hôte uniquement)
 uv run --env-file GMAO-ANALYTICS/.env uvicorn gmao_analytics.api.main:app \
     --host 127.0.0.1 --port 8300
+
+# Accès réseau local (accessible depuis les autres machines du réseau)
+uv run --env-file GMAO-ANALYTICS/.env uvicorn gmao_analytics.api.main:app \
+    --host 0.0.0.0 --port 8300
 ```
 
 Configuration : `GMAO-ANALYTICS/.env` (voir `.env.example`) —

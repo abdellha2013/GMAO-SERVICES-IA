@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 
 from gmao_ocr.config import Settings
 from gmao_ocr.qr.decoder import decode_qr_from_bytes
-from gmao_ocr.qr.validation import validate_qr_url
+from gmao_ocr.qr.validation import validate_qr_url_reason
 from gmao_ocr.services.equipement_client import (
     EquipementNotFoundError,
     EquipementUnavailableError,
@@ -84,11 +84,13 @@ class OcrService:
             )
 
         # 2) Validation anti-phishing + extraction id
-        equipement_id = validate_qr_url(result.data, self._settings.allowed_hosts)
+        equipement_id, reason = validate_qr_url_reason(
+            result.data, self._settings.allowed_hosts
+        )
         if equipement_id is None:
             return ScanOutcome(
                 success=False,
-                error="URL non reconnue",
+                error=reason or "URL non reconnue",
                 method=result.method,
             )
 

@@ -75,6 +75,14 @@ class GeminiLLM(LLMStrategy):
     def _cache_key(self) -> str:
         return f"{self._api_key[:8]}...|{self._model_name}"
 
+    def preload(self) -> Any:
+        """Initialise le client API Gemini (idempotent, cache de classe).
+
+        Appelé au démarrage pour retirer la latence de création du client
+        du premier appel ``generate``.
+        """
+        return self._get_client()
+
     def _get_client(self) -> Any:
         key = self._cache_key()
 
